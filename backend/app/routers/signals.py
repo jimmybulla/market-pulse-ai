@@ -28,7 +28,7 @@ def list_signals(
 ):
     query = db.table("signals").select(
         "*, stocks(ticker, name, sector, last_price)"
-    ).order("rank", ascending=True)
+    ).order("rank")
 
     count_query = db.table("signals").select("id", count="exact")
 

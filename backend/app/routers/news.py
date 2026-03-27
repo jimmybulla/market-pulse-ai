@@ -17,7 +17,7 @@ def list_news(
     offset: int = Query(0, ge=0),
     db: Client = Depends(get_db),
 ):
-    query = db.table("news_articles").select("*").order("published_at", ascending=False)
+    query = db.table("news_articles").select("*").order("published_at", desc=True)
     count_query = db.table("news_articles").select("id", count="exact")
 
     if ticker:

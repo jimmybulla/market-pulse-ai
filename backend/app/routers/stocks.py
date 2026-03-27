@@ -16,7 +16,7 @@ def list_stocks(
     offset: int = Query(0, ge=0),
     db: Client = Depends(get_db),
 ):
-    query = db.table("stocks").select("*").order("ticker", ascending=True)
+    query = db.table("stocks").select("*").order("ticker")
     count_query = db.table("stocks").select("id", count="exact")
 
     if sector:
@@ -45,7 +45,7 @@ def get_stock(ticker: str, db: Client = Depends(get_db)):
 
     signal_result = db.table("signals").select("*").eq(
         "stock_id", stock_result.data["id"]
-    ).order("created_at", ascending=False).limit(1).execute()
+    ).order("created_at", desc=True).limit(1).execute()
 
     return {
         **stock_result.data,
