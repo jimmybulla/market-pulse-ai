@@ -1,10 +1,13 @@
 # backend/app/services/features.py
+import logging
 from datetime import datetime, timezone
 from urllib.parse import urlparse
 
 from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
 
 from app.services.scoring import ArticleFeatures
+
+logger = logging.getLogger(__name__)
 
 _analyzer = SentimentIntensityAnalyzer()
 
@@ -47,6 +50,8 @@ def _sentiment(headline: str) -> float:
 
 def _event_type(headline: str) -> str:
     lower = headline.lower()
+    # First keyword match wins; priority follows insertion order:
+    # earnings → m&a → regulation → product → executive → fallback macro
     for event, keywords in EVENT_KEYWORDS.items():
         if any(kw in lower for kw in keywords):
             return event
@@ -60,7 +65,8 @@ def _credibility(url: str) -> float:
         if host.startswith("www."):
             host = host[4:]
         return CREDIBILITY.get(host, _DEFAULT_CREDIBILITY)
-    except Exception:
+    except Exception as exc:
+        logger.debug("_credibility: failed to parse URL %r — %s", url, exc)
         return _DEFAULT_CREDIBILITY
 
 
