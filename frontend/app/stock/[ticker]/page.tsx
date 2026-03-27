@@ -2,7 +2,7 @@ import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { getStock, getNews } from '@/lib/api'
 import { Badge } from '@/components/ui/badge'
-import ChartPlaceholder from '@/components/charts/ChartPlaceholder'
+import ChartsSection from '@/components/charts/ChartsSection'
 import SignalExpanded from '@/components/signals/SignalExpanded'
 import NewsFeed from '@/components/news/NewsFeed'
 import TopBar from '@/components/layout/TopBar'
@@ -117,9 +117,7 @@ export default async function StockPage({
           <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
             {/* Charts column (3/5) */}
             <div className="lg:col-span-3 space-y-4">
-              <ChartPlaceholder title="Price Chart" height="h-52" />
-              <ChartPlaceholder title="Sentiment Trend" height="h-40" />
-              <ChartPlaceholder title="News Volume" height="h-40" />
+              <ChartsSection ticker={stock.ticker} />
             </div>
 
             {/* Explanation column (2/5) */}
