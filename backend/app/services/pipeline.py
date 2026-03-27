@@ -55,7 +55,7 @@ def generate_signals(db: Client) -> None:
                 db.table("news_articles")
                 .select("id, sentiment_score, credibility_score, novelty_score, severity, event_type, url")
                 .gte("published_at", cutoff)
-                .eq("tickers", f'{{{stock["ticker"]}}}')  # Supabase array contains
+                .filter("tickers", "cs", f'{{{stock["ticker"]}}}')  # PostgreSQL array @> (contains)
                 .not_("sentiment_score", "is", None)
                 .execute()
                 .data or []
@@ -87,10 +87,11 @@ def generate_signals(db: Client) -> None:
                 "sources":         domains,
                 "article_ids":     article_ids,
             }
+            # TODO: replace with real backtesting data (hit_rate and sample_size are MVP placeholders)
             historical_analog = {
                 "avg_move":    round(result.expected_move_high * 0.9, 4),
-                "hit_rate":    0.64,
-                "sample_size": 15,
+                "hit_rate":    0.64,   # placeholder
+                "sample_size": 15,     # placeholder
             }
 
             now = datetime.now(timezone.utc)
