@@ -1,0 +1,5 @@
+[
+  {"name": "Reuters", "url": "https://reuters.com", "credibility_score": 0.92, "type": "news"},
+  {"name": "Bloomberg", "url": "https://bloomberg.com", "credibility_score": 0.95, "type": "news"},
+  {"name": "SEC EDGAR", "url": "https://sec.gov/edgar", "credibility_score": 1.0, "type": "sec_filing"}
+]

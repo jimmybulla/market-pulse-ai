@@ -1,0 +1,22 @@
+[
+  {"ticker": "AAPL", "name": "Apple Inc.", "sector": "Technology", "market_cap": 3200000000000, "last_price": 215.50},
+  {"ticker": "MSFT", "name": "Microsoft Corporation", "sector": "Technology", "market_cap": 3100000000000, "last_price": 415.20},
+  {"ticker": "NVDA", "name": "NVIDIA Corporation", "sector": "Technology", "market_cap": 2800000000000, "last_price": 875.50},
+  {"ticker": "GOOGL", "name": "Alphabet Inc.", "sector": "Technology", "market_cap": 2100000000000, "last_price": 172.30},
+  {"ticker": "META", "name": "Meta Platforms Inc.", "sector": "Technology", "market_cap": 1400000000000, "last_price": 560.80},
+  {"ticker": "JPM", "name": "JPMorgan Chase & Co.", "sector": "Finance", "market_cap": 680000000000, "last_price": 228.40},
+  {"ticker": "BAC", "name": "Bank of America Corp.", "sector": "Finance", "market_cap": 310000000000, "last_price": 40.20},
+  {"ticker": "GS", "name": "Goldman Sachs Group Inc.", "sector": "Finance", "market_cap": 175000000000, "last_price": 495.60},
+  {"ticker": "V", "name": "Visa Inc.", "sector": "Finance", "market_cap": 620000000000, "last_price": 300.15},
+  {"ticker": "MA", "name": "Mastercard Inc.", "sector": "Finance", "market_cap": 490000000000, "last_price": 518.90},
+  {"ticker": "JNJ", "name": "Johnson & Johnson", "sector": "Healthcare", "market_cap": 380000000000, "last_price": 158.30},
+  {"ticker": "PFE", "name": "Pfizer Inc.", "sector": "Healthcare", "market_cap": 142000000000, "last_price": 25.40},
+  {"ticker": "UNH", "name": "UnitedHealth Group Inc.", "sector": "Healthcare", "market_cap": 450000000000, "last_price": 488.70},
+  {"ticker": "ABBV", "name": "AbbVie Inc.", "sector": "Healthcare", "market_cap": 310000000000, "last_price": 175.20},
+  {"ticker": "MRK", "name": "Merck & Co. Inc.", "sector": "Healthcare", "market_cap": 240000000000, "last_price": 93.80},
+  {"ticker": "XOM", "name": "Exxon Mobil Corporation", "sector": "Energy", "market_cap": 490000000000, "last_price": 115.30},
+  {"ticker": "CVX", "name": "Chevron Corporation", "sector": "Energy", "market_cap": 280000000000, "last_price": 148.20},
+  {"ticker": "COP", "name": "ConocoPhillips", "sector": "Energy", "market_cap": 138000000000, "last_price": 108.40},
+  {"ticker": "AMZN", "name": "Amazon.com Inc.", "sector": "Consumer", "market_cap": 2200000000000, "last_price": 210.80},
+  {"ticker": "TSLA", "name": "Tesla Inc.", "sector": "Consumer", "market_cap": 870000000000, "last_price": 275.40}
+]
