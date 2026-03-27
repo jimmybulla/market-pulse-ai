@@ -1,0 +1,47 @@
+---
+description: Project overview, objectives, scope, and success criteria for Market Pulse AI
+globs:
+alwaysApply: true
+---
+
+# Market Pulse AI — Project Overview
+
+## What This App Does
+AI-powered market intelligence and prediction engine for **US large-cap stocks only** (MVP).
+
+- Scours global news in near real-time
+- Extracts market-moving events
+- Uses rules + LLM explanations for predictive analysis
+- Outputs ranked stock opportunities and crash risks
+- Every signal must be explainable and actionable
+
+## Scope
+- **STOCKS ONLY** — US large-cap focus for MVP
+- **NO CRYPTO** — reserved for V2
+- **NO broker integrations**
+- **NO social features**
+
+## Core Objectives
+1. Identify trading opportunities
+2. Detect early crash risks
+3. Summarize market-moving news
+4. Rank stocks by upside/downside potential
+5. Generate trade ideas with confidence scores
+6. Provide explainability for every prediction
+
+## Time Horizons
+- Near-term: 1–7 days
+- Medium-term: 1–6 months
+
+## MVP Success Criteria
+- ≥50% prediction accuracy
+- Signals are timely, actionable, and explainable
+- Every signal answers:
+  - "Why should I care?"
+  - "What might happen next?"
+
+## Guiding Principles
+- **Accuracy over complexity**
+- **Clarity over "AI magic"**
+- Monolith architecture for MVP
+- Use free tiers first (minimize cost)

@@ -1,0 +1,55 @@
+---
+description: System architecture and data pipeline for Market Pulse AI
+globs:
+alwaysApply: false
+---
+
+# System Architecture
+
+## Data Pipeline (in order)
+
+### 1. Data Ingestion
+- Pull news articles from NewsAPI and GDELT
+- Normalize data to a standard schema
+
+### 2. Event Detection
+Classify articles into event types:
+- Earnings (beats/misses/guidance)
+- Regulation (FDA approvals, fines, policy changes)
+- M&A (mergers, acquisitions, rumors)
+- Product launches
+- Executive changes (CEO/CFO departures or appointments)
+
+### 3. Feature Engineering
+Extract per-article features:
+- Sentiment score
+- Source credibility score
+- Novelty score (is this new information?)
+- Event severity
+- Social velocity (optional for MVP+)
+
+### 4. Scoring Engine (Rules First)
+Apply deterministic rules to generate:
+- **Opportunity Score** — upside potential
+- **Crash Risk Score** — downside risk
+
+### 5. Prediction Layer
+Convert scores into:
+- Expected move range (%)
+- Confidence score (%)
+- Signal direction (Bullish / Bearish / Crash Risk)
+
+### 6. Explanation Layer
+- LLM generates natural-language explanation
+- LLM does NOT generate predictions — only explains them
+- Must cite drivers, evidence, and historical analogs
+
+## Backend Services
+- FastAPI serves REST endpoints to the frontend
+- Celery workers run the ingestion and scoring pipeline
+- Redis acts as Celery broker and optional cache
+- Supabase stores all persistent data
+
+## Frontend Consumption
+- Next.js fetches signals, news, and explanations from FastAPI
+- Real-time or near-real-time via polling (WebSocket optional later)

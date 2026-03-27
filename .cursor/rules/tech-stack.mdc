@@ -1,0 +1,43 @@
+---
+description: Mandatory technology stack for Market Pulse AI — frontend, backend, database, jobs, hosting, and APIs
+globs:
+alwaysApply: true
+---
+
+# Tech Stack (MANDATORY)
+
+Do not deviate from this stack without explicit approval.
+
+## Frontend
+- **Framework**: Next.js (React) with App Router
+- **Language**: TypeScript
+- **Styling**: Tailwind CSS
+- **Hosting**: Vercel
+
+## Backend
+- **Language**: Python
+- **Framework**: FastAPI
+- **Hosting**: Railway or Render
+
+## Database
+- **Provider**: Supabase (PostgreSQL)
+- Do NOT use Vercel Postgres, PlanetScale, or other providers
+
+## Background Jobs
+- **Task Queue**: Celery
+- **Broker**: Redis
+
+## APIs & Data Sources
+
+### Market Data
+- Yahoo Finance (free, primary)
+- Finnhub (optional)
+
+### News
+- NewsAPI (primary)
+- GDELT (supplementary)
+
+## Key Constraints
+- Minimize cost — use free tiers wherever possible
+- Monolith architecture for MVP (no microservices)
+- No broker integrations

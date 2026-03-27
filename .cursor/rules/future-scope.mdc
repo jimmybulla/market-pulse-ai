@@ -1,0 +1,29 @@
+---
+description: Features explicitly out of scope for MVP — do not build these now
+globs:
+alwaysApply: true
+---
+
+# Out of Scope (Do Not Build Now)
+
+The following features are planned for V2 or later. Do not implement, scaffold, or design for them in the MVP.
+
+## Explicitly Excluded from MVP
+- Crypto / digital asset support
+- Portfolio tracking
+- Paper trading / simulated trading
+- ML models replacing scoring rules
+- Advanced alert channels (email, SMS, push)
+- Social features (comments, sharing, follows)
+- Broker integrations (Alpaca, IBKR, etc.)
+- Twitter/X ingestion (deferred to MVP+)
+- WebSocket real-time updates (polling is fine for MVP)
+
+## Why This Rule Exists
+Scope creep is the primary risk for this project. Every feature added to MVP:
+- Increases time to launch
+- Introduces more bugs
+- Delays validating the core signal accuracy
+
+## If Asked to Add These
+Respond with: "This is out of scope for MVP. Log it as a V2 feature."

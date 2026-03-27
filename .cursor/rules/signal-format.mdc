@@ -1,0 +1,85 @@
+---
+description: Signal data format, scoring logic, and display specifications for Market Pulse AI
+globs: **/signals/**, **/scoring/**, **/components/Signal**, **/components/signal**
+alwaysApply: false
+---
+
+# Signal Format
+
+Every signal must follow this structure exactly.
+
+## Dashboard Card (Compact View)
+
+```
+TSLA
+Bullish ↑
+Confidence: 72%
+Expected Move: +3% to +7%
+Horizon: 5 days
+
+Key Drivers:
+- Strong earnings sentiment
+- High social momentum
+- Positive sector trend
+
+Risk: Medium
+Rank: #5
+```
+
+## Expanded View
+
+### Prediction
+- Signal: Bullish | Bearish | Crash Risk
+- Confidence: 0–100%
+- Expected Move: low% to high%
+- Horizon: N days
+- Crash Risk: %
+
+### Why This Call
+- 2–4 bullet points: human-readable reasons
+
+### Evidence
+- Number of supporting articles
+- Source credibility rating
+- Official filings referenced (if any)
+
+### Historical Analog
+- Avg move in similar past scenarios
+- Hit rate (%)
+
+### Risk Flags
+- Any warning factors (e.g., overextended rally, sector volatility)
+
+---
+
+## Scoring Formula
+
+```
+Score =
+  (Sentiment × Credibility)
++ (Event Severity × Novelty)
++ (Historical Reaction Weight)
++ (Social Momentum)   ← optional MVP+
+```
+
+Outputs two scores:
+- **Opportunity Score** — 0.0 to 1.0 (upside potential)
+- **Crash Risk Score** — 0.0 to 1.0 (downside risk)
+
+## Signal Direction Rules
+| Opportunity Score | Crash Risk Score | Direction     |
+|-------------------|-----------------|---------------|
+| > 0.6             | < 0.3           | Bullish       |
+| < 0.4             | > 0.6           | Bearish       |
+| any               | > 0.75          | Crash Risk    |
+| 0.4–0.6           | 0.3–0.6         | Neutral       |
+
+## Confidence → Expected Move Mapping
+- Confidence 80%+: tight range, high conviction
+- Confidence 60–79%: moderate range
+- Confidence <60%: wide range, low conviction
+
+## Ranking
+- Rank by opportunity score (descending)
+- Crash Risk signals appear in a separate section
+- Top 10 shown on dashboard by default

@@ -1,0 +1,43 @@
+---
+description: Backtesting requirements and performance tracking for Market Pulse AI signals
+globs: **/backtesting/**, **/signal_history**, **/analytics/**
+alwaysApply: false
+---
+
+# Backtesting (Required for MVP)
+
+Every signal must be tracked from creation to resolution.
+
+## What to Track
+
+For each signal record in `signal_history`:
+- Signal direction at time of creation
+- Timestamp of creation
+- Predicted move range (low%, high%)
+- Time horizon (days)
+- Actual price move when horizon expires
+- Whether the prediction was correct (bool)
+
+## Resolution Logic
+
+When a signal's `horizon_days` has passed:
+1. Fetch the actual price move from Yahoo Finance
+2. Compare to predicted range
+3. Set `was_correct = true` if actual move falls within range AND direction is correct
+4. Store `actual_move` and `accuracy_notes`
+
+## Performance Metrics to Track
+
+| Metric              | Description                                      |
+|---------------------|--------------------------------------------------|
+| Accuracy            | % of signals where direction was correct         |
+| Hit rate            | % of signals where move fell within predicted range |
+| Confidence calibration | Do 70% confidence signals win ~70% of the time? |
+| Avg move (by type)  | Average actual move for Bullish / Bearish signals |
+
+## Minimum Target
+- **≥50% prediction accuracy** for MVP launch
+
+## Where to Show It
+- Internal analytics page (not user-facing for MVP)
+- Signal expanded view: "Historical Analog" section shows aggregate stats for similar past signals

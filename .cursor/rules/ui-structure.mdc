@@ -1,0 +1,100 @@
+---
+description: Frontend UI pages, components, and design guidelines for Market Pulse AI
+globs: **/*.tsx, **/*.ts, **/app/**, **/components/**
+alwaysApply: false
+---
+
+# UI Structure
+
+## Pages
+
+### Home Dashboard (`/`)
+Sections:
+1. **Top Opportunities** — ranked bullish signals
+2. **Crash Risk Alerts** — high crash-risk signals
+3. **Breaking News Feed** — latest ingested articles with tickers
+4. **Sector Heatmap** — visual overview of sector sentiment
+
+### Stock Detail Page (`/stock/[ticker]`)
+Sections:
+1. **Signal Summary** — compact signal card at top
+2. **Charts**:
+   - Price chart (from Yahoo Finance)
+   - Sentiment trend chart
+   - News volume chart
+3. **Explanation Panel** — LLM-generated reasoning
+4. **Source Links** — clickable article references
+
+---
+
+## Alert System
+
+Triggers:
+- High confidence signal generated (>75%)
+- Crash risk spike (>0.75)
+- Major news event detected
+- Signal direction change
+
+Format:
+```
+TSLA → Bullish (72%)
+Expected +3–7% (5d)
+```
+
+---
+
+## Design Rules
+
+See `design-system.mdc` for the full color, typography, token, and accessibility specification.
+
+Summary of key rules:
+- **Dark mode by default** — base `#121212`, cards `#1E1E1E`
+- **Action color**: `#00B4FF` (brand cyan) for buttons, active nav, primary CTAs — derived from logo "AI" wordmark
+- Status colors must always include icon + text (never color alone):
+  - Bullish: `↑` + green (`#4CAF50`)
+  - Bearish / Crash Risk: `↓` + red (`#F44336`)
+  - Neutral / Warning: `~` + amber (`#FFB300`)
+  - Info: blue (`#03A9F4`)
+- **Tabular numerics**: `font-variant-numeric: tabular-nums` on all price/percentage displays
+- **Bento Grid layout** for dashboard — asymmetric modular blocks
+- Confidence shown as a progress bar or percentage badge
+- Every signal card links to its expanded stock detail page
+- Loading and empty states are required for every data section
+- Minimum touch target: 24×24px for all interactive elements
+
+---
+
+## Component Hierarchy
+
+```
+app/
+  page.tsx                  ← Home Dashboard
+  stock/[ticker]/page.tsx   ← Stock Detail Page
+  layout.tsx                ← Root layout (nav, theme)
+
+components/
+  signals/
+    SignalCard.tsx           ← Compact dashboard card
+    SignalExpanded.tsx       ← Full expanded view
+    SignalRankList.tsx       ← Ranked list of signals
+  news/
+    NewsFeed.tsx
+    NewsItem.tsx
+  charts/
+    PriceChart.tsx
+    SentimentChart.tsx
+    NewsVolumeChart.tsx
+  heatmap/
+    SectorHeatmap.tsx
+  alerts/
+    AlertBanner.tsx
+  ui/                        ← Shared primitives (buttons, badges, cards)
+```
+
+---
+
+## Data Fetching
+- Fetch signals, news, and explanations from the FastAPI backend
+- Use Next.js Server Components for initial data load
+- Use client components + polling (or SWR) for near-real-time updates
+- Do NOT expose backend API keys to the client

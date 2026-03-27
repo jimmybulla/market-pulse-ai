@@ -1,0 +1,173 @@
+---
+description: Fintech design system — colors, typography, layout paradigms, tokens, and accessibility rules for Market Pulse AI
+globs: **/*.tsx, **/*.ts, **/*.css, **/tailwind.config*, **/globals.css
+alwaysApply: true
+---
+
+# Design System: Next-Gen Fintech (2025–2026)
+
+## 1. Color System
+
+### Brand Foundation
+Derived from the official Market Pulse AI logo — do not deviate from these values.
+
+| Role                | Hex       | Description                                        |
+|---------------------|-----------|----------------------------------------------------|
+| Primary (Anchor)    | `#0A2540` | Deep navy — sidebar, nav, headings, icon base      |
+| Action (Cyan)       | `#00B4FF` | Electric cyan — "AI" wordmark, buttons, highlights |
+| Gradient Start      | `#1A6BCC` | Logo icon gradient midpoint (navy → cyan)          |
+| Gradient End        | `#00D4FF` | Logo icon gradient tip (brightest cyan)            |
+| Background (Light)  | `#F6F9FC` | Low-strain canvas for data-heavy views             |
+| Background (Dark)   | `#121212` | Soft black — never use pure `#000000`              |
+
+### Brand Gradient (Logo-Derived)
+Use this gradient for the logo icon, hero accents, chart fills, and primary CTAs:
+```css
+background: linear-gradient(135deg, #0A2540 0%, #1A6BCC 50%, #00D4FF 100%);
+```
+For text gradients (e.g., "AI" wordmark replication):
+```css
+background: linear-gradient(90deg, #1A6BCC, #00D4FF);
+-webkit-background-clip: text;
+-webkit-text-fill-color: transparent;
+```
+
+### Semantic Status Palette
+Always pair status colors with icons or text labels — never rely on color alone.
+
+| Status          | Light Mode  | Dark Mode   | Usage                        |
+|-----------------|-------------|-------------|------------------------------|
+| Success/Profit  | `#198754`   | `#4CAF50`   | Bullish signals, gains       |
+| Danger/Loss     | `#DC3545`   | `#F44336`   | Bearish, crash risk, losses  |
+| Warning/Pending | `#FFC107`   | `#FFB300`   | Medium risk, neutral signals |
+| Info/Neutral    | `#0DCAF0`   | `#03A9F4`   | Informational, metadata      |
+
+### Dark Mode Elevation (No Shadows)
+Use lighter background tones to indicate depth — NOT box shadows:
+- Base canvas: `#121212`
+- Card surface: `#1E1E1E`
+- Elevated modal/overlay: `#2A2A2A`
+- Tooltip / glass overlay: translucent `#1E1E1E` + `backdrop-filter: blur(12px)`
+
+Reduce saturation of vibrant colors by 10–20% in dark mode to prevent visual "vibration."
+
+---
+
+## 2. Typography
+
+### Font Stack
+| Role                   | Font                         | Usage                                         |
+|------------------------|------------------------------|-----------------------------------------------|
+| Primary Interface      | **Inter**                    | All UI text, labels, body copy                |
+| Brand / Headings       | **Manrope** or **Plus Jakarta Sans** | Hero text, section titles, marketing   |
+| Technical / Data       | **IBM Plex Mono** or **Roboto Mono** | Transaction IDs, tickers, code       |
+| Advanced Tables        | **Recursive**                | Uni-width font — bold doesn't shift layout    |
+
+### Numerical Typography Rules
+- **Always enable tabular figures** on any numeric output:
+  ```css
+  font-variant-numeric: tabular-nums;
+  ```
+- Minimum font size: **14px** for data text, **16px** for body
+- Avoid font weights below 400 for numerical data
+- Use lining figures (not oldstyle) for financial numbers
+
+---
+
+## 3. Layout Paradigms
+
+### Bento Grid
+Organize the dashboard into modular, asymmetric blocks:
+- Large block: Primary metric (e.g., top signal, portfolio value)
+- Medium blocks: Secondary metrics (signal cards, charts)
+- Small widgets: Quick stats (confidence %, news count, sector)
+- Blocks stack and resize gracefully on mobile
+
+### Depth & Tactility
+- **Glassmorphism**: Use for overlays, tooltips, and secondary modals
+  ```css
+  background: rgba(30, 30, 30, 0.7);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  ```
+- **Neumorphism**: Reserve for tactile interactive elements only (toggle switches, primary CTA buttons)
+- **Rounded corners**: `border-radius: 12px` for cards, `8px` for inputs/badges
+
+---
+
+## 4. Design Token Architecture
+
+### Naming Convention: Category–Property–Modifier
+```css
+/* Colors */
+--color-button-primary-bg: #635BFF;
+--color-surface-card: #1E1E1E;       /* dark */
+--color-surface-base: #121212;       /* dark */
+--color-feedback-error-text: #F44336;
+--color-feedback-success-text: #4CAF50;
+--color-feedback-warning-text: #FFB300;
+
+/* Spacing */
+--spacing-layout-margin: 1.5rem;
+--spacing-card-padding: 1.25rem;
+
+/* Typography */
+--font-primary: 'Inter', sans-serif;
+--font-mono: 'IBM Plex Mono', monospace;
+--font-brand: 'Manrope', sans-serif;
+```
+
+### Tailwind Config Mapping
+Map all tokens to Tailwind custom colors so they're usable as utility classes:
+```ts
+// tailwind.config.ts
+colors: {
+  anchor: '#0A2540',         // Primary navy (logo wordmark, sidebar)
+  brand: {
+    cyan: '#00B4FF',         // Action / "AI" accent
+    mid: '#1A6BCC',          // Gradient midpoint
+    bright: '#00D4FF',       // Gradient tip
+  },
+  surface: { base: '#121212', card: '#1E1E1E', elevated: '#2A2A2A' },
+  profit: { DEFAULT: '#4CAF50', light: '#198754' },
+  loss: { DEFAULT: '#F44336', light: '#DC3545' },
+  warning: { DEFAULT: '#FFB300', light: '#FFC107' },
+  info: { DEFAULT: '#03A9F4', light: '#0DCAF0' },
+}
+```
+
+---
+
+## 5. Accessibility (WCAG 2.2)
+
+Financial applications have legal accessibility requirements. All of these are non-negotiable.
+
+| Rule                  | Requirement                                                        |
+|-----------------------|--------------------------------------------------------------------|
+| Contrast (text)       | Minimum **4.5:1** ratio for normal text                           |
+| Contrast (UI)         | Minimum **3:1** for icons, borders, graphical components          |
+| Touch targets         | Minimum **24×24px** for all interactive elements                  |
+| No color-only signals | Profit/Loss must include **↑↓ icons AND text**, not just color    |
+| Form labels           | Every input must have a **visible label** — no placeholder-only   |
+| Focus indicators      | Visible keyboard focus ring on all interactive elements           |
+
+### Signal Cards Accessibility Example
+```tsx
+// Correct — direction communicated via color + icon + text
+<span className="text-profit">↑ Bullish</span>
+
+// Wrong — color only, no icon or text
+<span className="text-profit">●</span>
+```
+
+---
+
+## 6. Component Defaults
+
+- **Default theme**: Dark mode
+- **Charts**: Smooth area/line curves with gradient fills under the curve
+- **Stat changes**: Show percentage delta with colored arrow (↑ green / ↓ red)
+- **Tables**: Monospaced font for all numeric columns, alternating row backgrounds `#1E1E1E` / `#242424`
+- **Sidebar**: Icon-based, compact, left-aligned; active item uses `#635BFF` accent
+- **Cards**: `#1E1E1E` background, `12px` radius, `1px solid rgba(255,255,255,0.08)` border
+- **Badges**: Pill shape, semantic background at 15% opacity with matching text color

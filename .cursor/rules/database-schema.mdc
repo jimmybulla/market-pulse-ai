@@ -1,0 +1,94 @@
+---
+description: Database schema and table definitions for Market Pulse AI (Supabase/PostgreSQL)
+globs: **/*.sql, **/models.py, **/schema.py, **/migrations/**
+alwaysApply: false
+---
+
+# Database Schema
+
+Provider: **Supabase (PostgreSQL)**
+
+## Tables
+
+### `users`
+- id (uuid, PK)
+- email (text, unique)
+- created_at (timestamptz)
+- preferences (jsonb) — alert settings, watchlist
+
+### `stocks`
+- id (uuid, PK)
+- ticker (text, unique) — e.g. "TSLA"
+- name (text) — e.g. "Tesla Inc."
+- sector (text)
+- market_cap (numeric)
+- last_price (numeric)
+- updated_at (timestamptz)
+
+### `sources`
+- id (uuid, PK)
+- name (text)
+- url (text)
+- credibility_score (float) — 0.0 to 1.0
+- type (text) — "news", "press_release", "sec_filing"
+
+### `news_articles`
+- id (uuid, PK)
+- source_id (uuid, FK → sources)
+- headline (text)
+- body (text)
+- url (text, unique)
+- published_at (timestamptz)
+- fetched_at (timestamptz)
+- tickers (text[]) — extracted ticker symbols
+- sentiment_score (float) — -1.0 to 1.0
+- event_type (text) — earnings, regulation, m&a, product, executive
+- novelty_score (float)
+- credibility_score (float)
+
+### `events`
+- id (uuid, PK)
+- stock_id (uuid, FK → stocks)
+- article_id (uuid, FK → news_articles)
+- event_type (text)
+- severity (float) — 0.0 to 1.0
+- detected_at (timestamptz)
+
+### `signals`
+- id (uuid, PK)
+- stock_id (uuid, FK → stocks)
+- direction (text) — "bullish", "bearish", "crash_risk"
+- confidence (float) — 0.0 to 1.0
+- expected_move_low (float) — e.g. 0.03 (+3%)
+- expected_move_high (float) — e.g. 0.07 (+7%)
+- horizon_days (int) — 1, 5, 30, 90, 180
+- opportunity_score (float)
+- crash_risk_score (float)
+- rank (int)
+- explanation (text) — LLM-generated
+- drivers (jsonb) — top factors
+- evidence (jsonb) — article references
+- historical_analog (jsonb) — avg move, hit rate
+- risk_flags (text[])
+- created_at (timestamptz)
+- expires_at (timestamptz)
+
+### `signal_history`
+- id (uuid, PK)
+- signal_id (uuid, FK → signals)
+- stock_id (uuid, FK → stocks)
+- direction (text)
+- confidence (float)
+- expected_move_low (float)
+- expected_move_high (float)
+- horizon_days (int)
+- created_at (timestamptz)
+- actual_move (float) — filled in after horizon passes
+- was_correct (bool) — filled in after horizon passes
+- accuracy_notes (text)
+
+## Indexes
+- `news_articles(published_at DESC)`
+- `signals(stock_id, created_at DESC)`
+- `signals(rank ASC)`
+- `signal_history(stock_id, created_at DESC)`
