@@ -6,6 +6,16 @@ from app.main import app
 from app.database import get_db
 
 
+@pytest.fixture(autouse=True)
+def no_scheduler(monkeypatch):
+    """Prevent APScheduler from starting during tests."""
+    from app import scheduler as sched_module
+    monkeypatch.setattr(sched_module, "configure_scheduler", lambda fn: None)
+    # Also prevent scheduler.start() from running
+    monkeypatch.setattr(sched_module.scheduler, "start", lambda: None)
+    monkeypatch.setattr(sched_module.scheduler, "shutdown", lambda: None)
+
+
 @pytest.fixture
 def mock_db():
     db = MagicMock()

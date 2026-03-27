@@ -1,13 +1,39 @@
 # backend/app/main.py
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.routers import signals, stocks, news, analytics, admin
+from app.scheduler import scheduler, configure_scheduler
+from app.database import get_db
+from app.services.pipeline import run_pipeline
+
+
+def _pipeline_runner():
+    """Sync wrapper: get a DB client and run the pipeline."""
+    import logging
+    logger = logging.getLogger(__name__)
+    try:
+        db = next(get_db())
+        run_pipeline(db)
+    except Exception as exc:
+        logger.error("[scheduler] Pipeline run failed: %s", exc)
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    configure_scheduler(_pipeline_runner)
+    scheduler.start()
+    yield
+    scheduler.shutdown()
+
 
 app = FastAPI(
     title="Market Pulse AI API",
     version="0.1.0",
     description="AI-powered market intelligence and prediction engine — MVP",
+    lifespan=lifespan,
 )
 
 app.add_middleware(
