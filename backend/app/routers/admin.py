@@ -40,4 +40,4 @@ def trigger_pipeline(
     _: None = Depends(_verify_secret),
 ):
     run_pipeline(db)
-    return {"status": "started"}
+    return {"status": "ok"}

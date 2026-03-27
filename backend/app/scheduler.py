@@ -1,9 +1,9 @@
 # backend/app/scheduler.py
 from datetime import datetime, timezone
 
-from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from apscheduler.schedulers.background import BackgroundScheduler
 
-scheduler = AsyncIOScheduler()
+scheduler = BackgroundScheduler()
 
 
 def configure_scheduler(run_pipeline_fn) -> None:

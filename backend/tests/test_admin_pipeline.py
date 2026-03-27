@@ -24,7 +24,7 @@ def test_pipeline_run_returns_started():
     with patch("app.routers.admin.run_pipeline") as mock_pipeline:
         resp = client.post("/admin/pipeline/run?secret=dev-secret")
     assert resp.status_code == 200
-    assert resp.json()["status"] == "started"
+    assert resp.json()["status"] == "ok"
     mock_pipeline.assert_called_once()
 
 

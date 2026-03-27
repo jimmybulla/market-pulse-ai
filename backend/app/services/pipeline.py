@@ -56,7 +56,7 @@ def generate_signals(db: Client) -> None:
                 .select("id, sentiment_score, credibility_score, novelty_score, severity, event_type, url")
                 .gte("published_at", cutoff)
                 .filter("tickers", "cs", f'{{{stock["ticker"]}}}')  # PostgreSQL array @> (contains)
-                .not_("sentiment_score", "is", None)
+                .neq("sentiment_score", "null")
                 .execute()
                 .data or []
             )

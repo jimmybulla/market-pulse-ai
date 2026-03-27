@@ -94,7 +94,7 @@ def test_generate_signals_upserts_signal():
     ]
     db = MagicMock()
     db.table.return_value.select.return_value.execute.return_value.data = stocks
-    db.table.return_value.select.return_value.gte.return_value.eq.return_value.not_.return_value.is_.return_value.execute.return_value.data = articles
+    db.table.return_value.select.return_value.gte.return_value.filter.return_value.neq.return_value.execute.return_value.data = articles
     db.table.return_value.select.return_value.eq.return_value.execute.return_value.data = []
 
     with patch("app.services.pipeline.score_articles", return_value=_make_signal_result()):
@@ -108,7 +108,7 @@ def test_generate_signals_skips_when_scoring_returns_none():
     stocks = [{"id": "stock-1", "ticker": "AAPL"}]
     db = MagicMock()
     db.table.return_value.select.return_value.execute.return_value.data = stocks
-    db.table.return_value.select.return_value.gte.return_value.eq.return_value.not_.return_value.is_.return_value.execute.return_value.data = []
+    db.table.return_value.select.return_value.gte.return_value.filter.return_value.neq.return_value.execute.return_value.data = []
     db.table.return_value.select.return_value.eq.return_value.execute.return_value.data = []
 
     with patch("app.services.pipeline.score_articles", return_value=None):

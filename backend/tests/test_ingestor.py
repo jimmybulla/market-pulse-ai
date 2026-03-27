@@ -9,9 +9,9 @@ from app.services.ingestor import ingest_news
 def _make_db(existing_urls: list[str] = None, ticker_rows: list[dict] = None):
     db = MagicMock()
 
-    # Set up the URL query to return existing URLs
+    # Set up the URL query to return existing URLs (includes .gte() in chain now)
     url_data = [{"url": u} for u in (existing_urls or [])]
-    db.table.return_value.select.return_value.execute.return_value.data = url_data
+    db.table.return_value.select.return_value.gte.return_value.execute.return_value.data = url_data
 
     # insert returns something with .data
     db.table.return_value.insert.return_value.execute.return_value.data = [

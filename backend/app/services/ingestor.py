@@ -1,6 +1,6 @@
 # backend/app/services/ingestor.py
 import logging
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 
 import yfinance as yf
 from supabase import Client
@@ -18,10 +18,12 @@ def ingest_news(db: Client, tickers: list[str]) -> list[str]:
     if not tickers:
         return []
 
-    # Fetch all existing URLs (URL uniqueness is global, not per-ticker)
+    # Fetch existing URLs from the last 7 days (match signal retention window)
+    cutoff = (datetime.now(timezone.utc) - timedelta(days=7)).isoformat()
     existing_resp = (
         db.table("news_articles")
         .select("url")
+        .gte("published_at", cutoff)
         .execute()
     )
     existing_urls: set[str] = {row["url"] for row in (existing_resp.data or [])}
