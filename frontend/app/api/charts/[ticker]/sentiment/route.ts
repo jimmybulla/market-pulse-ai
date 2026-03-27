@@ -4,9 +4,13 @@ export async function GET(
 ) {
   const { ticker } = await params
   const { searchParams } = new URL(request.url)
-  const res = await fetch(
-    `${process.env.BACKEND_URL}/stocks/${ticker}/sentiment-trend?${searchParams}`,
-    { cache: 'no-store' }
-  )
-  return Response.json(await res.json(), { status: res.status })
+  try {
+    const res = await fetch(
+      `${process.env.BACKEND_URL}/stocks/${ticker.toUpperCase()}/sentiment-trend?${searchParams}`,
+      { cache: 'no-store' }
+    )
+    return Response.json(await res.json(), { status: res.status })
+  } catch {
+    return Response.json({ error: 'upstream_unavailable' }, { status: 502 })
+  }
 }

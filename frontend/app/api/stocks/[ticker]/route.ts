@@ -3,9 +3,13 @@ export async function GET(
   { params }: { params: Promise<{ ticker: string }> }
 ) {
   const { ticker } = await params
-  const res = await fetch(
-    `${process.env.BACKEND_URL}/stocks/${ticker.toUpperCase()}`,
-    { cache: 'no-store' }
-  )
-  return Response.json(await res.json(), { status: res.status })
+  try {
+    const res = await fetch(
+      `${process.env.BACKEND_URL}/stocks/${ticker.toUpperCase()}`,
+      { cache: 'no-store' }
+    )
+    return Response.json(await res.json(), { status: res.status })
+  } catch {
+    return Response.json({ error: 'upstream_unavailable' }, { status: 502 })
+  }
 }
