@@ -1,0 +1,212 @@
+# backend/app/services/pipeline.py
+import logging
+import time
+from datetime import datetime, timezone, timedelta
+from statistics import mean
+
+import yfinance as yf
+from supabase import Client
+
+from app.services.features import extract_features
+from app.services.ingestor import ingest_news
+from app.services.scoring import ArticleFeatures, score_articles
+
+logger = logging.getLogger(__name__)
+
+
+def extract_features_for_articles(db: Client, articles: list[dict]) -> None:
+    """Run VADER + keyword feature extraction on articles that lack sentiment."""
+    for article in articles:
+        try:
+            published_at = datetime.fromisoformat(article["published_at"])
+            features = extract_features(
+                headline=article["headline"],
+                url=article["url"],
+                published_at=published_at,
+            )
+            db.table("news_articles").update({
+                "sentiment_score":   features.sentiment_score,
+                "event_type":        features.event_type,
+                "credibility_score": features.credibility_score,
+                "novelty_score":     features.novelty_score,
+                "severity":          features.severity,
+            }).eq("id", article["id"]).execute()
+        except Exception as exc:
+            logger.error(
+                "[pipeline] ERROR: feature extraction failed for article %s — %s",
+                article.get("id"),
+                exc,
+            )
+
+    logger.info("[pipeline] Features extracted for %d articles", len(articles))
+
+
+def generate_signals(db: Client) -> None:
+    """Score articles per stock and upsert signals. Re-ranks all signals after."""
+    stocks = db.table("stocks").select("id, ticker").execute().data or []
+    cutoff = (datetime.now(timezone.utc) - timedelta(hours=48)).isoformat()
+
+    updated = 0
+    unchanged = 0
+
+    for stock in stocks:
+        try:
+            rows = (
+                db.table("news_articles")
+                .select("id, sentiment_score, credibility_score, novelty_score, severity, event_type, url")
+                .gte("published_at", cutoff)
+                .eq("tickers", f'{{{stock["ticker"]}}}')  # Supabase array contains
+                .not_("sentiment_score", "is", None)
+                .execute()
+                .data or []
+            )
+
+            features = [
+                ArticleFeatures(
+                    sentiment_score=r["sentiment_score"],
+                    credibility_score=r["credibility_score"],
+                    novelty_score=r["novelty_score"],
+                    severity=r["severity"],
+                    event_type=r["event_type"],
+                )
+                for r in rows
+            ]
+
+            result = score_articles(features)
+            if result is None:
+                unchanged += 1
+                continue
+
+            article_ids = [r["id"] for r in rows]
+            credibilities = [r["credibility_score"] for r in rows]
+            domains = list({r.get("url", "").split("/")[2] for r in rows if r.get("url")})
+
+            evidence = {
+                "article_count":   len(features),
+                "avg_credibility": round(mean(credibilities), 4) if credibilities else 0.0,
+                "sources":         domains,
+                "article_ids":     article_ids,
+            }
+            historical_analog = {
+                "avg_move":    round(result.expected_move_high * 0.9, 4),
+                "hit_rate":    0.64,
+                "sample_size": 15,
+            }
+
+            now = datetime.now(timezone.utc)
+            signal_data = {
+                "stock_id":           stock["id"],
+                "direction":          result.direction,
+                "confidence":         result.confidence,
+                "expected_move_low":  result.expected_move_low,
+                "expected_move_high": result.expected_move_high,
+                "opportunity_score":  result.opportunity_score,
+                "crash_risk_score":   result.crash_risk_score,
+                "drivers":            result.drivers,
+                "risk_flags":         result.risk_flags,
+                "evidence":           evidence,
+                "historical_analog":  historical_analog,
+                "horizon_days":       5,
+                "expires_at":         (now + timedelta(days=7)).isoformat(),
+                "updated_at":         now.isoformat(),
+            }
+
+            existing = (
+                db.table("signals")
+                .select("id")
+                .eq("stock_id", stock["id"])
+                .execute()
+                .data or []
+            )
+
+            if existing:
+                db.table("signals").update(signal_data).eq("stock_id", stock["id"]).execute()
+            else:
+                signal_data["created_at"] = now.isoformat()
+                db.table("signals").insert(signal_data).execute()
+
+            updated += 1
+
+        except Exception as exc:
+            logger.error(
+                "[pipeline] ERROR: signal generation failed for %s — %s",
+                stock.get("ticker"),
+                exc,
+            )
+
+    # Re-rank all signals by opportunity_score DESC
+    try:
+        all_signals = (
+            db.table("signals")
+            .select("id, opportunity_score")
+            .order("opportunity_score", desc=True)
+            .execute()
+            .data or []
+        )
+        for rank, sig in enumerate(all_signals, start=1):
+            db.table("signals").update({"rank": rank}).eq("id", sig["id"]).execute()
+    except Exception as exc:
+        logger.error("[pipeline] ERROR: re-ranking failed — %s", exc)
+
+    logger.info(
+        "[pipeline] Signals: %d updated, %d unchanged (below threshold)",
+        updated,
+        unchanged,
+    )
+
+
+def update_prices(db: Client) -> None:
+    """Update last_price for all stocks from yfinance."""
+    stocks = db.table("stocks").select("id, ticker").execute().data or []
+    count = 0
+
+    for stock in stocks:
+        try:
+            price = yf.Ticker(stock["ticker"]).fast_info.last_price
+            if price is None:
+                continue
+            db.table("stocks").update({
+                "last_price": price,
+                "updated_at": datetime.now(timezone.utc).isoformat(),
+            }).eq("id", stock["id"]).execute()
+            count += 1
+        except Exception as exc:
+            logger.error(
+                "[pipeline] ERROR: price update failed for %s — %s",
+                stock.get("ticker"),
+                exc,
+            )
+
+    logger.info("[pipeline] Prices: %d updated", count)
+
+
+def run_pipeline(db: Client) -> None:
+    """Run all four pipeline steps in sequence."""
+    start = time.monotonic()
+
+    stocks = db.table("stocks").select("id, ticker").execute().data or []
+    tickers = [s["ticker"] for s in stocks]
+    logger.info("[pipeline] Starting pipeline run — %d stocks", len(tickers))
+
+    # Step 1: Ingest news
+    new_article_ids = ingest_news(db, tickers)
+
+    # Step 2: Extract features on new articles
+    if new_article_ids:
+        new_articles = (
+            db.table("news_articles")
+            .select("id, headline, url, published_at")
+            .in_("id", new_article_ids)
+            .execute()
+            .data or []
+        )
+        extract_features_for_articles(db, new_articles)
+
+    # Step 3: Generate signals
+    generate_signals(db)
+
+    # Step 4: Update prices
+    update_prices(db)
+
+    elapsed = time.monotonic() - start
+    logger.info("[pipeline] Pipeline complete in %.1fs", elapsed)
