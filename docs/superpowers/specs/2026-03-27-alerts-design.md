@@ -79,15 +79,11 @@ VAPID_CONTACT_EMAIL=mailto:you@example.com
 NEXT_PUBLIC_VAPID_PUBLIC_KEY=<same base64url as VAPID_PUBLIC_KEY>
 ```
 
-Generate keys once with:
-```python
-from py_vapid import Vapid
-v = Vapid()
-v.generate_keys()
-print(v.private_pem().decode())
-print(v.public_key.public_bytes(...))
+Generate keys once with the npm CLI (easiest):
+```bash
+npx web-push generate-vapid-keys
 ```
-Or use the `web-push` npm CLI: `npx web-push generate-vapid-keys`.
+Copy the output into your `.env` / `.env.local` files.
 
 ---
 
@@ -119,12 +115,14 @@ Request body: `{ "endpoint": "..." }`
 ### `services/push.py` — `send_push_notification`
 
 ```python
-def send_push_notification(subscription: dict, title: str, body: str, url: str) -> None:
+def send_push_notification(
+    subscription: dict, title: str, body: str, url: str, db: Client
+) -> None:
     """Send a single Web Push notification via VAPID."""
 ```
 
 - Wraps `pywebpush.webpush()`
-- On `WebPushException` with status 410 (Gone) or 404 → subscription is stale, delete it from DB
+- On `WebPushException` with HTTP status 410 (Gone) or 404 → subscription is stale; deletes it from `push_subscriptions` by `endpoint`
 - Silently logs other errors (don't crash the pipeline)
 
 ### `services/pipeline.py` — `check_and_push_alerts`
@@ -168,7 +166,7 @@ def check_and_push_alerts(db: Client) -> None:
 
         for sub in subs:
             subscription = {"endpoint": sub["endpoint"], "keys": {"p256dh": sub["p256dh"], "auth": sub["auth"]}}
-            send_push_notification(subscription, title, body, url)
+            send_push_notification(subscription, title, body, url, db)
 ```
 
 ---
@@ -183,7 +181,6 @@ self.addEventListener('push', (event) => {
   event.waitUntil(
     self.registration.showNotification(title, {
       body,
-      icon: '/icon-192.png',
       data: { url },
     })
   )
@@ -198,7 +195,12 @@ self.addEventListener('notificationclick', (event) => {
 ### `lib/push.ts` — Helpers
 
 ```typescript
-export function urlBase64ToUint8Array(base64String: string): Uint8Array { ... }
+export function urlBase64ToUint8Array(base64String: string): Uint8Array {
+  const padding = '='.repeat((4 - (base64String.length % 4)) % 4)
+  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/')
+  const rawData = atob(base64)
+  return Uint8Array.from([...rawData].map((c) => c.charCodeAt(0)))
+}
 
 export async function subscribeToPush(): Promise<PushSubscription> {
   const reg = await navigator.serviceWorker.ready
@@ -235,7 +237,24 @@ useEffect(() => {
 }, [])
 ```
 
-This `useEffect` runs in a client component wrapper (e.g. a `<Providers>` component already wrapping layout, or a new `<ServiceWorkerRegistrar />`).
+The existing `layout.tsx` is a pure Server Component with no client wrapper. Add a new `<ServiceWorkerRegistrar />` client component:
+
+```typescript
+// frontend/components/layout/ServiceWorkerRegistrar.tsx
+'use client'
+import { useEffect } from 'react'
+
+export default function ServiceWorkerRegistrar() {
+  useEffect(() => {
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js')
+    }
+  }, [])
+  return null
+}
+```
+
+Import and render `<ServiceWorkerRegistrar />` inside `<body>` in `layout.tsx`.
 
 ---
 
