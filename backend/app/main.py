@@ -1,0 +1,29 @@
+# backend/app/main.py
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+
+from app.routers import signals, stocks, news, analytics, admin
+
+app = FastAPI(
+    title="Market Pulse AI API",
+    version="0.1.0",
+    description="AI-powered market intelligence and prediction engine — MVP",
+)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+app.include_router(signals.router, prefix="/signals", tags=["signals"])
+app.include_router(stocks.router, prefix="/stocks", tags=["stocks"])
+app.include_router(news.router, prefix="/news", tags=["news"])
+app.include_router(analytics.router, prefix="/analytics", tags=["analytics"])
+app.include_router(admin.router, prefix="/admin", tags=["admin"])
+
+
+@app.get("/health", tags=["health"])
+def health_check():
+    return {"status": "ok", "version": "0.1.0"}
