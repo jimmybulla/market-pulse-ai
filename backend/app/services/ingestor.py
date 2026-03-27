@@ -18,11 +18,10 @@ def ingest_news(db: Client, tickers: list[str]) -> list[str]:
     if not tickers:
         return []
 
-    # Fetch all existing URLs for these tickers in one query
+    # Fetch all existing URLs (URL uniqueness is global, not per-ticker)
     existing_resp = (
         db.table("news_articles")
         .select("url")
-        .in_("tickers", tickers)
         .execute()
     )
     existing_urls: set[str] = {row["url"] for row in (existing_resp.data or [])}
@@ -46,9 +45,11 @@ def ingest_news(db: Client, tickers: list[str]) -> list[str]:
 
             existing_urls.add(url)  # prevent re-insert within same run
 
-            published_at = datetime.fromtimestamp(
-                article.get("providerPublishTime", 0), tz=timezone.utc
-            )
+            ts = article.get("providerPublishTime")
+            if ts:
+                published_at = datetime.fromtimestamp(ts, tz=timezone.utc)
+            else:
+                published_at = datetime.now(timezone.utc)
 
             row = {
                 "headline":    article.get("title", ""),

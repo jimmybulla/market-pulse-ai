@@ -9,14 +9,9 @@ from app.services.ingestor import ingest_news
 def _make_db(existing_urls: list[str] = None, ticker_rows: list[dict] = None):
     db = MagicMock()
 
-    # stocks query
-    stocks_data = ticker_rows or [{"id": "stock-1", "ticker": "AAPL"}]
-    db.table.return_value.select.return_value.execute.return_value.data = stocks_data
-
-    # existing URLs query
+    # Set up the URL query to return existing URLs
     url_data = [{"url": u} for u in (existing_urls or [])]
-    (db.table.return_value.select.return_value
-       .in_.return_value.execute.return_value.data) = url_data
+    db.table.return_value.select.return_value.execute.return_value.data = url_data
 
     # insert returns something with .data
     db.table.return_value.insert.return_value.execute.return_value.data = [
@@ -72,13 +67,8 @@ def test_ingest_news_handles_ticker_error_gracefully():
 
 def test_ingest_news_multiple_tickers():
     db = MagicMock()
-    stocks_data = [
-        {"id": "stock-1", "ticker": "AAPL"},
-        {"id": "stock-2", "ticker": "MSFT"},
-    ]
-    db.table.return_value.select.return_value.execute.return_value.data = stocks_data
-    (db.table.return_value.select.return_value
-       .in_.return_value.execute.return_value.data) = []
+    # URL query returns empty list (no existing URLs)
+    db.table.return_value.select.return_value.execute.return_value.data = []
     db.table.return_value.insert.return_value.execute.return_value.data = [
         {"id": "article-x"}
     ]
