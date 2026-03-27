@@ -1,5 +1,5 @@
 # backend/app/scheduler.py
-from datetime import datetime
+from datetime import datetime, timezone
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
@@ -12,7 +12,7 @@ def configure_scheduler(run_pipeline_fn) -> None:
         run_pipeline_fn,
         "interval",
         minutes=30,
-        next_run_time=datetime.now(),  # run immediately on startup
+        next_run_time=datetime.now(timezone.utc),  # run immediately on startup
         id="market_pipeline",
         max_instances=1,               # prevent overlapping runs
         coalesce=True,                 # skip missed runs if server was down

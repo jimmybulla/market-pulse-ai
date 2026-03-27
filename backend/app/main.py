@@ -1,4 +1,5 @@
 # backend/app/main.py
+import logging
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
@@ -9,13 +10,13 @@ from app.scheduler import scheduler, configure_scheduler
 from app.database import get_db
 from app.services.pipeline import run_pipeline
 
+logger = logging.getLogger(__name__)
+
 
 def _pipeline_runner():
     """Sync wrapper: get a DB client and run the pipeline."""
-    import logging
-    logger = logging.getLogger(__name__)
     try:
-        db = next(get_db())
+        db = get_db()
         run_pipeline(db)
     except Exception as exc:
         logger.error("[scheduler] Pipeline run failed: %s", exc)
@@ -26,7 +27,7 @@ async def lifespan(app: FastAPI):
     configure_scheduler(_pipeline_runner)
     scheduler.start()
     yield
-    scheduler.shutdown()
+    scheduler.shutdown(wait=False)
 
 
 app = FastAPI(
