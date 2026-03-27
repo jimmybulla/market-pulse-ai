@@ -5,6 +5,7 @@ from supabase import Client
 from app.database import get_db
 from app.config import settings
 from app.services.seed import load_seed_data, _FAKE_UUID
+from app.services.pipeline import run_pipeline
 
 router = APIRouter()
 
@@ -31,3 +32,12 @@ def clear_database(
     for table in ("signal_history", "signals", "events", "news_articles", "stocks", "sources"):
         db.table(table).delete().neq("id", _FAKE_UUID).execute()
     return {"message": "All tables cleared"}
+
+
+@router.post("/pipeline/run")
+def trigger_pipeline(
+    db: Client = Depends(get_db),
+    _: None = Depends(_verify_secret),
+):
+    run_pipeline(db)
+    return {"status": "started"}
