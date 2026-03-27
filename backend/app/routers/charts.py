@@ -18,11 +18,15 @@ _DAYS: dict[str, int] = {"7d": 7, "30d": 30, "90d": 90}
 @router.get("/{ticker}/price-history")
 def get_price_history(
     ticker: str,
-    range: RangeParam = Query("30d"),
-    db: Client = Depends(get_db),
+    period: RangeParam = Query("30d", alias="range"),
 ):
-    t = yf.Ticker(ticker.upper())
-    hist = t.history(period=range)
+    try:
+        hist = yf.Ticker(ticker.upper()).history(period=period)
+    except Exception:
+        raise HTTPException(
+            status_code=502,
+            detail=f"Failed to fetch price data for {ticker.upper()}",
+        )
     if hist.empty:
         raise HTTPException(
             status_code=502,
@@ -32,22 +36,22 @@ def get_price_history(
         {"date": str(idx.date()), "close": round(float(row["Close"]), 2)}
         for idx, row in hist.iterrows()
     ]
-    return {"ticker": ticker.upper(), "range": range, "data": data}
+    return {"ticker": ticker.upper(), "range": period, "data": data}
 
 
 @router.get("/{ticker}/sentiment-trend")
 def get_sentiment_trend(
     ticker: str,
-    range: RangeParam = Query("30d"),
+    period: RangeParam = Query("30d", alias="range"),
     db: Client = Depends(get_db),
 ):
     cutoff = (
-        datetime.now(timezone.utc) - timedelta(days=_DAYS[range])
+        datetime.now(timezone.utc) - timedelta(days=_DAYS[period])
     ).isoformat()
     rows = (
         db.table("news_articles")
         .select("published_at, sentiment_score")
-        .filter("tickers", "cs", f"{{{ticker.upper()}}}")
+        .contains("tickers", [ticker.upper()])
         .gte("published_at", cutoff)
         .neq("sentiment_score", "null")
         .execute()
@@ -61,22 +65,22 @@ def get_sentiment_trend(
         {"date": d, "avg_sentiment": round(sum(v) / len(v), 4)}
         for d, v in sorted(daily.items())
     ]
-    return {"ticker": ticker.upper(), "range": range, "data": data}
+    return {"ticker": ticker.upper(), "range": period, "data": data}
 
 
 @router.get("/{ticker}/news-volume")
 def get_news_volume(
     ticker: str,
-    range: RangeParam = Query("30d"),
+    period: RangeParam = Query("30d", alias="range"),
     db: Client = Depends(get_db),
 ):
     cutoff = (
-        datetime.now(timezone.utc) - timedelta(days=_DAYS[range])
+        datetime.now(timezone.utc) - timedelta(days=_DAYS[period])
     ).isoformat()
     rows = (
         db.table("news_articles")
         .select("published_at")
-        .filter("tickers", "cs", f"{{{ticker.upper()}}}")
+        .contains("tickers", [ticker.upper()])
         .gte("published_at", cutoff)
         .execute()
         .data
@@ -86,4 +90,4 @@ def get_news_volume(
     for row in rows:
         daily[row["published_at"][:10]] += 1
     data = [{"date": d, "count": c} for d, c in sorted(daily.items())]
-    return {"ticker": ticker.upper(), "range": range, "data": data}
+    return {"ticker": ticker.upper(), "range": period, "data": data}

@@ -45,6 +45,14 @@ def test_price_history_empty_returns_502(client):
     assert response.status_code == 502
 
 
+def test_price_history_yfinance_exception_returns_502(client):
+    c, mock_db = client
+    with patch("app.routers.charts.yf.Ticker") as mock_ticker:
+        mock_ticker.return_value.history.side_effect = Exception("timeout")
+        response = c.get("/stocks/AAPL/price-history")
+    assert response.status_code == 502
+
+
 def test_price_history_upcases_ticker(client):
     c, mock_db = client
     mock_hist = pd.DataFrame(
@@ -68,7 +76,7 @@ def test_sentiment_trend_aggregates_by_day(client):
         {"published_at": "2026-03-27T14:00:00", "sentiment_score": 0.3},
         {"published_at": "2026-03-26T09:00:00", "sentiment_score": -0.2},
     ]
-    mock_db.table.return_value.select.return_value.filter.return_value.gte.return_value.neq.return_value.execute.return_value = mock_exec
+    mock_db.table.return_value.select.return_value.contains.return_value.gte.return_value.neq.return_value.execute.return_value = mock_exec
     response = c.get("/stocks/AAPL/sentiment-trend?range=7d")
     assert response.status_code == 200
     body = response.json()
@@ -83,7 +91,7 @@ def test_sentiment_trend_empty_returns_200_empty_list(client):
     c, mock_db = client
     mock_exec = MagicMock()
     mock_exec.data = []
-    mock_db.table.return_value.select.return_value.filter.return_value.gte.return_value.neq.return_value.execute.return_value = mock_exec
+    mock_db.table.return_value.select.return_value.contains.return_value.gte.return_value.neq.return_value.execute.return_value = mock_exec
     response = c.get("/stocks/AAPL/sentiment-trend")
     assert response.status_code == 200
     assert response.json()["data"] == []
@@ -99,7 +107,7 @@ def test_news_volume_counts_by_day(client):
         {"published_at": "2026-03-27T14:00:00"},
         {"published_at": "2026-03-26T09:00:00"},
     ]
-    mock_db.table.return_value.select.return_value.filter.return_value.gte.return_value.execute.return_value = mock_exec
+    mock_db.table.return_value.select.return_value.contains.return_value.gte.return_value.execute.return_value = mock_exec
     response = c.get("/stocks/AAPL/news-volume?range=7d")
     assert response.status_code == 200
     body = response.json()
@@ -114,7 +122,7 @@ def test_news_volume_empty_returns_200_empty_list(client):
     c, mock_db = client
     mock_exec = MagicMock()
     mock_exec.data = []
-    mock_db.table.return_value.select.return_value.filter.return_value.gte.return_value.execute.return_value = mock_exec
+    mock_db.table.return_value.select.return_value.contains.return_value.gte.return_value.execute.return_value = mock_exec
     response = c.get("/stocks/AAPL/news-volume")
     assert response.status_code == 200
     assert response.json()["data"] == []
