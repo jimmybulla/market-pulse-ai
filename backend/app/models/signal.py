@@ -31,3 +31,17 @@ class PaginatedSignals(BaseModel):
     total: int
     limit: int
     offset: int
+
+
+class SignalHistoryEntry(BaseModel):
+    id: str
+    direction: str
+    confidence: float
+    expected_move_low: float
+    expected_move_high: float
+    horizon_days: int
+    price_at_signal: Optional[float] = None
+    actual_move: Optional[float] = None
+    was_correct: Optional[bool] = None
+    accuracy_notes: Optional[str] = None
+    created_at: datetime
