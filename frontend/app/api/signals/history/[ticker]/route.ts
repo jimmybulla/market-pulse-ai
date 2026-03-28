@@ -8,7 +8,8 @@ export async function GET(
       `${process.env.BACKEND_URL}/signals/history/${ticker}`,
       { cache: 'no-store' },
     )
-    return Response.json(await res.json(), { status: res.status })
+    const data = await res.json()
+    return Response.json(data, { status: res.status })
   } catch {
     return Response.json({ error: 'upstream_unavailable' }, { status: 502 })
   }

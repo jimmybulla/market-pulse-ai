@@ -72,19 +72,35 @@ export async function getNews(params?: NewsParams): Promise<PaginatedNews> {
 }
 
 export async function getSignalHistory(ticker: string): Promise<SignalHistoryEntry[]> {
-  const res = await fetch(
-    `${process.env.BACKEND_URL}/signals/history/${ticker}`,
-    { cache: 'no-store' },
-  )
-  if (!res.ok) return []
-  return res.json()
+  try {
+    const res = await fetch(
+      `${BACKEND}/signals/history/${ticker}`,
+      { cache: 'no-store' },
+    )
+    if (!res.ok) return []
+    return res.json()
+  } catch {
+    return []
+  }
 }
 
 export async function getBacktestingStats(): Promise<BacktestingStats> {
-  const res = await fetch(`${process.env.BACKEND_URL}/analytics/backtesting`, {
-    next: { revalidate: 300 },
-  })
-  if (!res.ok) {
+  try {
+    const res = await fetch(`${BACKEND}/analytics/backtesting`, {
+      next: { revalidate: 300 },
+    })
+    if (!res.ok) {
+      return {
+        total_resolved: 0,
+        overall_hit_rate: 0,
+        by_direction: {},
+        by_confidence_tier: {},
+        avg_predicted_move: 0,
+        avg_actual_move: 0,
+      }
+    }
+    return res.json()
+  } catch {
     return {
       total_resolved: 0,
       overall_hit_rate: 0,
@@ -94,5 +110,4 @@ export async function getBacktestingStats(): Promise<BacktestingStats> {
       avg_actual_move: 0,
     }
   }
-  return res.json()
 }

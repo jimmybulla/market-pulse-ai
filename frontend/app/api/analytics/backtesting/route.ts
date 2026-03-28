@@ -3,7 +3,8 @@ export async function GET() {
     const res = await fetch(`${process.env.BACKEND_URL}/analytics/backtesting`, {
       next: { revalidate: 300 },
     })
-    return Response.json(await res.json(), { status: res.status })
+    const data = await res.json()
+    return Response.json(data, { status: res.status })
   } catch {
     return Response.json({ error: 'upstream_unavailable' }, { status: 502 })
   }
