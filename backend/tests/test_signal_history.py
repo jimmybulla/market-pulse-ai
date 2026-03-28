@@ -54,7 +54,6 @@ def test_record_history_skips_when_unchanged():
     hist.insert.assert_not_called()
 
 
-import pytest
 from datetime import datetime, timezone, timedelta
 from unittest.mock import patch
 from app.services.pipeline import resolve_signal_outcomes
@@ -134,6 +133,7 @@ def test_resolve_marks_bullish_incorrect_when_move_below_low():
         resolve_signal_outcomes(db)
     update_payload = hist.update.call_args.args[0]
     assert update_payload["was_correct"] is False
+    assert update_payload["actual_move"] == pytest.approx(0.01, abs=1e-4)
 
 
 def test_resolve_marks_bearish_correct_when_price_drops():

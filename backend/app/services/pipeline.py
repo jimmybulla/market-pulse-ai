@@ -272,7 +272,7 @@ def resolve_signal_outcomes(db: Client) -> None:
     for row in expired:
         try:
             ticker = stock_ticker.get(row["stock_id"])
-            if not ticker or row.get("price_at_signal") is None:
+            if not ticker or not row.get("price_at_signal"):
                 continue
 
             current_price = yf.Ticker(ticker).fast_info.last_price
@@ -288,9 +288,13 @@ def resolve_signal_outcomes(db: Client) -> None:
                 was_correct = actual_move <= -exp_low
 
             sign = "+" if actual_move >= 0 else ""
+            if row["direction"] == "bullish":
+                expected_str = f"+{exp_low * 100:.0f}%\u2013{row['expected_move_high'] * 100:.0f}%"
+            else:
+                expected_str = f"-{exp_low * 100:.0f}%\u2013-{row['expected_move_high'] * 100:.0f}%"
             accuracy_notes = (
                 f"moved {sign}{actual_move * 100:.1f}%, "
-                f"expected +{exp_low * 100:.0f}%\u2013{row['expected_move_high'] * 100:.0f}%"
+                f"expected {expected_str}"
             )
 
             db.table("signal_history").update({
