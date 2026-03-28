@@ -190,10 +190,14 @@ def check_and_push_alerts(db: Client) -> None:
     if not subs:
         return
 
+    # Build stock_id → ticker map (signals table stores stock_id, not ticker)
+    stocks = db.table("stocks").select("id, ticker").execute().data or []
+    stock_ticker = {s["id"]: s["ticker"] for s in stocks}
+
     rows = (
         db.table("signals")
         .select(
-            "ticker, direction, confidence, crash_risk_score, "
+            "stock_id, direction, confidence, crash_risk_score, "
             "expected_move_low, expected_move_high, horizon_days"
         )
         .gte("created_at", cutoff)
@@ -202,22 +206,26 @@ def check_and_push_alerts(db: Client) -> None:
     )
 
     for row in rows:
+        ticker = stock_ticker.get(row["stock_id"])
+        if not ticker:
+            continue
+
         crash_triggered = row["crash_risk_score"] >= 0.8
         conf_triggered = row["confidence"] >= 0.8
 
         if crash_triggered:
-            title = f"\u26a0 {row['ticker']} Crash Risk"
+            title = f"\u26a0 {ticker} Crash Risk"
             body = f"Risk score: {row['crash_risk_score']:.2f} \u00b7 Take caution"
-            url = f"/stock/{row['ticker']}"
+            url = f"/stock/{ticker}"
         elif conf_triggered:
             direction = row["direction"].replace("_", " ").title()
             pct = (
                 f"+{row['expected_move_low'] * 100:.0f}%"
                 f"\u2013{row['expected_move_high'] * 100:.0f}%"
             )
-            title = f"{row['ticker']} \u2192 {direction} ({row['confidence'] * 100:.0f}%)"
+            title = f"{ticker} \u2192 {direction} ({row['confidence'] * 100:.0f}%)"
             body = f"Expected {pct} \u00b7 {row['horizon_days']} days"
-            url = f"/stock/{row['ticker']}"
+            url = f"/stock/{ticker}"
         else:
             continue
 
