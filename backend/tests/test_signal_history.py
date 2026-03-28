@@ -200,3 +200,35 @@ def test_signal_history_returns_rows_for_known_ticker(client):
     data = response.json()
     assert len(data) == 1
     assert data[0]["direction"] == "bullish"
+
+
+def test_backtesting_returns_zeros_when_no_resolved_signals(client):
+    c, mock_db = client
+    mock_db.table.return_value.select.return_value.neq.return_value.execute.return_value = MagicMock(data=[])
+    response = c.get("/analytics/backtesting")
+    assert response.status_code == 200
+    data = response.json()
+    assert data["total_resolved"] == 0
+    assert data["overall_hit_rate"] == 0.0
+
+
+def test_backtesting_computes_hit_rate_correctly(client):
+    c, mock_db = client
+    rows = [
+        {"direction": "bullish", "confidence": 0.82, "expected_move_low": 0.03,
+         "expected_move_high": 0.07, "actual_move": 0.05, "was_correct": True},
+        {"direction": "bullish", "confidence": 0.75, "expected_move_low": 0.03,
+         "expected_move_high": 0.07, "actual_move": 0.01, "was_correct": False},
+        {"direction": "bearish", "confidence": 0.65, "expected_move_low": 0.03,
+         "expected_move_high": 0.07, "actual_move": -0.04, "was_correct": True},
+    ]
+    mock_db.table.return_value.select.return_value.neq.return_value.execute.return_value = MagicMock(data=rows)
+    response = c.get("/analytics/backtesting")
+    assert response.status_code == 200
+    data = response.json()
+    assert data["total_resolved"] == 3
+    assert data["overall_hit_rate"] == pytest.approx(2 / 3, abs=0.001)
+    assert "bullish" in data["by_direction"]
+    assert data["by_direction"]["bullish"]["total"] == 2
+    assert "high" in data["by_confidence_tier"]   # confidence 0.82 → high
+    assert "medium" in data["by_confidence_tier"]  # 0.75, 0.65 → medium
