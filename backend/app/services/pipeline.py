@@ -238,6 +238,77 @@ def _record_signal_history(
     }).execute()
 
 
+def resolve_signal_outcomes(db: Client) -> None:
+    """Resolve actual outcomes for signal_history rows whose horizon has passed."""
+    now = datetime.now(timezone.utc)
+    lookback = (now - timedelta(days=30)).isoformat()
+
+    rows = (
+        db.table("signal_history")
+        .select(
+            "id, stock_id, direction, confidence, expected_move_low, "
+            "expected_move_high, horizon_days, price_at_signal, created_at"
+        )
+        .is_("actual_move", "null")
+        .gte("created_at", lookback)
+        .execute()
+        .data or []
+    )
+
+    expired = [
+        r for r in rows
+        if datetime.fromisoformat(r["created_at"].replace("Z", "+00:00"))
+        + timedelta(days=r["horizon_days"]) <= now
+    ]
+
+    if not expired:
+        logger.info("[pipeline] Resolution: 0 expired signals to resolve")
+        return
+
+    stocks = db.table("stocks").select("id, ticker").execute().data or []
+    stock_ticker = {s["id"]: s["ticker"] for s in stocks}
+
+    resolved = 0
+    for row in expired:
+        try:
+            ticker = stock_ticker.get(row["stock_id"])
+            if not ticker or row.get("price_at_signal") is None:
+                continue
+
+            current_price = yf.Ticker(ticker).fast_info.last_price
+            if current_price is None:
+                continue
+
+            actual_move = (current_price - row["price_at_signal"]) / row["price_at_signal"]
+            exp_low = row["expected_move_low"]
+
+            if row["direction"] == "bullish":
+                was_correct = actual_move >= exp_low
+            else:  # bearish or crash_risk
+                was_correct = actual_move <= -exp_low
+
+            sign = "+" if actual_move >= 0 else ""
+            accuracy_notes = (
+                f"moved {sign}{actual_move * 100:.1f}%, "
+                f"expected +{exp_low * 100:.0f}%\u2013{row['expected_move_high'] * 100:.0f}%"
+            )
+
+            db.table("signal_history").update({
+                "actual_move":    round(actual_move, 6),
+                "was_correct":    was_correct,
+                "accuracy_notes": accuracy_notes,
+            }).eq("id", row["id"]).execute()
+
+            resolved += 1
+        except Exception as exc:
+            logger.error(
+                "[pipeline] Resolution failed for history row %s: %s",
+                row.get("id"), exc,
+            )
+
+    logger.info("[pipeline] Resolved %d signal outcomes", resolved)
+
+
 def check_and_push_alerts(db: Client) -> None:
     """After a pipeline run, push notifications for high-confidence and crash-risk signals."""
     cutoff = (datetime.now(timezone.utc) - timedelta(minutes=31)).isoformat()
@@ -323,7 +394,13 @@ def run_pipeline(db: Client) -> None:
     # Step 4: Update prices
     update_prices(db)
 
-    # Step 5: Push alerts for newly created high-confidence signals
+    # Step 5: Resolve signal outcomes
+    try:
+        resolve_signal_outcomes(db)
+    except Exception as exc:
+        logger.error("[pipeline] Outcome resolution failed: %s", exc)
+
+    # Step 6: Push alerts for newly created high-confidence signals
     try:
         check_and_push_alerts(db)
     except Exception as exc:
