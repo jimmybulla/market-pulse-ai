@@ -124,18 +124,27 @@ def generate_signals(db: Client) -> None:
 
             if existing:
                 db.table("signals").update(signal_data).eq("stock_id", stock["id"]).execute()
+                signal_id = existing[0]["id"]
             else:
                 signal_data["created_at"] = now.isoformat()
-                db.table("signals").insert(signal_data).execute()
+                insert_result = db.table("signals").insert(signal_data).execute()
+                signal_id = insert_result.data[0]["id"] if insert_result.data else None
 
-            signal_id = existing[0]["id"] if existing else None
-            _record_signal_history(
-                db,
-                stock["id"],
-                signal_data,
-                stock.get("last_price"),
-                signal_id,
-            )
+            try:
+                _record_signal_history(
+                    db,
+                    stock["id"],
+                    signal_data,
+                    stock.get("last_price"),
+                    signal_id,
+                )
+            except Exception as hist_exc:
+                logger.error(
+                    "[pipeline] ERROR: history recording failed for %s — %s",
+                    stock.get("ticker"),
+                    hist_exc,
+                )
+
             updated += 1
 
         except Exception as exc:
