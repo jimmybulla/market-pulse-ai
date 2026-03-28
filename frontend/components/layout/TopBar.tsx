@@ -1,3 +1,5 @@
+import PushNotificationToggle from '@/components/alerts/PushNotificationToggle'
+
 interface TopBarProps {
   title: string
   subtitle?: string
@@ -10,6 +12,7 @@ export default function TopBar({ title, subtitle }: TopBarProps) {
         <h1 className="text-base font-semibold text-white">{title}</h1>
         {subtitle && <p className="text-xs text-gray-500">{subtitle}</p>}
       </div>
+      <PushNotificationToggle />
     </header>
   )
 }
