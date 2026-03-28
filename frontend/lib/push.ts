@@ -7,12 +7,12 @@ export function urlBase64ToUint8Array(base64String: string): Uint8Array {
 }
 
 export async function subscribeToPush(): Promise<PushSubscription> {
+  const vapidKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY
+  if (!vapidKey) throw new Error('NEXT_PUBLIC_VAPID_PUBLIC_KEY is not configured')
   const reg = await navigator.serviceWorker.ready
   return reg.pushManager.subscribe({
     userVisibleOnly: true,
-    applicationServerKey: urlBase64ToUint8Array(
-      process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ?? ''
-    ),
+    applicationServerKey: urlBase64ToUint8Array(vapidKey),
   })
 }
 
