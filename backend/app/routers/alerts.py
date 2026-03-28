@@ -8,9 +8,14 @@ from app.database import get_db
 router = APIRouter()
 
 
+class PushKeys(BaseModel):
+    p256dh: str
+    auth: str
+
+
 class SubscribeRequest(BaseModel):
     endpoint: str
-    keys: dict  # {"p256dh": ..., "auth": ...}
+    keys: PushKeys
 
 
 class UnsubscribeRequest(BaseModel):
@@ -22,8 +27,8 @@ def subscribe(body: SubscribeRequest, db: Client = Depends(get_db)):
     db.table("push_subscriptions").upsert(
         {
             "endpoint": body.endpoint,
-            "p256dh": body.keys["p256dh"],
-            "auth": body.keys["auth"],
+            "p256dh": body.keys.p256dh,
+            "auth": body.keys.auth,
         },
         on_conflict="endpoint",
     ).execute()
