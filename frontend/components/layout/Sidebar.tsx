@@ -2,13 +2,14 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { BarChart3, TrendingUp, Newspaper, LayoutDashboard } from 'lucide-react'
+import { BarChart3, TrendingUp, Newspaper, LayoutDashboard, FlaskConical } from 'lucide-react'
 
 const nav = [
   { href: '/', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/signals', label: 'Signals', icon: TrendingUp },
   { href: '/stocks', label: 'Stocks', icon: BarChart3 },
   { href: '/news', label: 'News', icon: Newspaper },
+  { href: '/backtesting', label: 'Backtesting', icon: FlaskConical },
 ]
 
 export default function Sidebar() {
