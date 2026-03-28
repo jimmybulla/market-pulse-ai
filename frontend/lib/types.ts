@@ -89,3 +89,26 @@ export interface PaginatedNews {
   limit: number
   offset: number
 }
+
+export interface SignalHistoryEntry {
+  id: string
+  direction: SignalDirection
+  confidence: number
+  expected_move_low: number
+  expected_move_high: number
+  horizon_days: number
+  price_at_signal: number | null
+  actual_move: number | null
+  was_correct: boolean | null
+  accuracy_notes: string | null
+  created_at: string
+}
+
+export interface BacktestingStats {
+  total_resolved: number
+  overall_hit_rate: number
+  by_direction: Record<string, { total: number; hit_rate: number }>
+  by_confidence_tier: Record<string, { total: number; hit_rate: number }>
+  avg_predicted_move: number
+  avg_actual_move: number
+}

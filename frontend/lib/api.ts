@@ -3,6 +3,7 @@ import type {
   PaginatedSignals, SignalResponse,
   PaginatedStocks, StockWithSignal,
   PaginatedNews, SignalDirection,
+  SignalHistoryEntry, BacktestingStats,
 } from './types'
 
 const BACKEND = process.env.BACKEND_URL || 'http://localhost:8000'
@@ -67,5 +68,31 @@ export async function getNews(params?: NewsParams): Promise<PaginatedNews> {
   const url = buildUrl('/news', params as Record<string, string | number | undefined>)
   const res = await fetch(url, { cache: 'no-store' })
   if (!res.ok) throw new Error(`Failed to fetch news: ${res.status}`)
+  return res.json()
+}
+
+export async function getSignalHistory(ticker: string): Promise<SignalHistoryEntry[]> {
+  const res = await fetch(
+    `${process.env.BACKEND_URL}/signals/history/${ticker}`,
+    { cache: 'no-store' },
+  )
+  if (!res.ok) return []
+  return res.json()
+}
+
+export async function getBacktestingStats(): Promise<BacktestingStats> {
+  const res = await fetch(`${process.env.BACKEND_URL}/analytics/backtesting`, {
+    next: { revalidate: 300 },
+  })
+  if (!res.ok) {
+    return {
+      total_resolved: 0,
+      overall_hit_rate: 0,
+      by_direction: {},
+      by_confidence_tier: {},
+      avg_predicted_move: 0,
+      avg_actual_move: 0,
+    }
+  }
   return res.json()
 }
