@@ -4,6 +4,7 @@ import { getStock, getNews } from '@/lib/api'
 import { Badge } from '@/components/ui/badge'
 import ChartsSection from '@/components/charts/ChartsSection'
 import SignalExpanded from '@/components/signals/SignalExpanded'
+import SignalHistory from '@/components/signals/SignalHistory'
 import NewsFeed from '@/components/news/NewsFeed'
 import TopBar from '@/components/layout/TopBar'
 import type { SignalDirection } from '@/lib/types'
@@ -126,6 +127,9 @@ export default async function StockPage({
             </div>
           </div>
         )}
+
+        {/* Signal History */}
+        <SignalHistory ticker={stock.ticker} />
 
         {/* Related Articles */}
         <section className="space-y-3">
