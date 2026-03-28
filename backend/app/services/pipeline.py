@@ -3,6 +3,7 @@ import logging
 import time
 from datetime import datetime, timezone, timedelta
 from statistics import mean
+from typing import Optional
 
 import yfinance as yf
 from supabase import Client
@@ -44,7 +45,7 @@ def extract_features_for_articles(db: Client, articles: list[dict]) -> None:
 
 def generate_signals(db: Client) -> None:
     """Score articles per stock and upsert signals. Re-ranks all signals after."""
-    stocks = db.table("stocks").select("id, ticker").execute().data or []
+    stocks = db.table("stocks").select("id, ticker, last_price").execute().data or []
     cutoff = (datetime.now(timezone.utc) - timedelta(hours=48)).isoformat()
 
     updated = 0
@@ -127,6 +128,14 @@ def generate_signals(db: Client) -> None:
                 signal_data["created_at"] = now.isoformat()
                 db.table("signals").insert(signal_data).execute()
 
+            signal_id = existing[0]["id"] if existing else None
+            _record_signal_history(
+                db,
+                stock["id"],
+                signal_data,
+                stock.get("last_price"),
+                signal_id,
+            )
             updated += 1
 
         except Exception as exc:
@@ -180,6 +189,44 @@ def update_prices(db: Client) -> None:
             )
 
     logger.info("[pipeline] Prices: %d updated", count)
+
+
+def _record_signal_history(
+    db: Client,
+    stock_id: str,
+    signal_data: dict,
+    last_price: Optional[float],
+    signal_id: Optional[str],
+) -> None:
+    """Insert a signal_history snapshot if direction or confidence changed >= 5%."""
+    last = (
+        db.table("signal_history")
+        .select("direction, confidence")
+        .eq("stock_id", stock_id)
+        .order("created_at", desc=True)
+        .limit(1)
+        .execute()
+        .data or []
+    )
+
+    direction = signal_data["direction"]
+    confidence = signal_data["confidence"]
+
+    if last:
+        prev = last[0]
+        if prev["direction"] == direction and abs(prev["confidence"] - confidence) < 0.05:
+            return  # no meaningful change
+
+    db.table("signal_history").insert({
+        "stock_id":           stock_id,
+        "signal_id":          signal_id,
+        "direction":          direction,
+        "confidence":         confidence,
+        "expected_move_low":  signal_data["expected_move_low"],
+        "expected_move_high": signal_data["expected_move_high"],
+        "horizon_days":       signal_data["horizon_days"],
+        "price_at_signal":    last_price,
+    }).execute()
 
 
 def check_and_push_alerts(db: Client) -> None:
