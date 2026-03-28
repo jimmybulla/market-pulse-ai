@@ -9,6 +9,7 @@ from supabase import Client
 
 from app.services.features import extract_features
 from app.services.ingestor import ingest_news
+from app.services.push import send_push_notification
 from app.services.scoring import ArticleFeatures, score_articles
 
 logger = logging.getLogger(__name__)
@@ -181,6 +182,55 @@ def update_prices(db: Client) -> None:
     logger.info("[pipeline] Prices: %d updated", count)
 
 
+def check_and_push_alerts(db: Client) -> None:
+    """After a pipeline run, push notifications for high-confidence and crash-risk signals."""
+    cutoff = (datetime.now(timezone.utc) - timedelta(minutes=31)).isoformat()
+
+    subs = db.table("push_subscriptions").select("*").execute().data or []
+    if not subs:
+        return
+
+    rows = (
+        db.table("signals")
+        .select(
+            "ticker, direction, confidence, crash_risk_score, "
+            "expected_move_low, expected_move_high, horizon_days"
+        )
+        .gte("created_at", cutoff)
+        .execute()
+        .data or []
+    )
+
+    for row in rows:
+        crash_triggered = row["crash_risk_score"] >= 0.8
+        conf_triggered = row["confidence"] >= 0.8
+
+        if crash_triggered:
+            title = f"\u26a0 {row['ticker']} Crash Risk"
+            body = f"Risk score: {row['crash_risk_score']:.2f} \u00b7 Take caution"
+            url = f"/stock/{row['ticker']}"
+        elif conf_triggered:
+            direction = row["direction"].replace("_", " ").title()
+            pct = (
+                f"+{row['expected_move_low'] * 100:.0f}%"
+                f"\u2013{row['expected_move_high'] * 100:.0f}%"
+            )
+            title = f"{row['ticker']} \u2192 {direction} ({row['confidence'] * 100:.0f}%)"
+            body = f"Expected {pct} \u00b7 {row['horizon_days']} days"
+            url = f"/stock/{row['ticker']}"
+        else:
+            continue
+
+        for sub in subs:
+            subscription = {
+                "endpoint": sub["endpoint"],
+                "keys": {"p256dh": sub["p256dh"], "auth": sub["auth"]},
+            }
+            send_push_notification(subscription, title, body, url, db)
+
+    logger.info("[pipeline] Alert check complete — %d signals evaluated", len(rows))
+
+
 def run_pipeline(db: Client) -> None:
     """Run all four pipeline steps in sequence."""
     start = time.monotonic()
@@ -208,6 +258,12 @@ def run_pipeline(db: Client) -> None:
 
     # Step 4: Update prices
     update_prices(db)
+
+    # Step 5: Push alerts for newly created high-confidence signals
+    try:
+        check_and_push_alerts(db)
+    except Exception as exc:
+        logger.error("[pipeline] Alert check failed: %s", exc)
 
     elapsed = time.monotonic() - start
     logger.info("[pipeline] Pipeline complete in %.1fs", elapsed)
