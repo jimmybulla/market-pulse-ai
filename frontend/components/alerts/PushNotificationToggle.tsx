@@ -13,11 +13,10 @@ export default function PushNotificationToggle() {
       setState('unsupported')
       return
     }
-    navigator.serviceWorker.ready.then((reg) => {
-      reg.pushManager.getSubscription().then((sub) => {
-        setState(sub ? 'subscribed' : 'unsubscribed')
-      })
-    })
+    navigator.serviceWorker.ready
+      .then((reg) => reg.pushManager.getSubscription())
+      .then((sub) => setState(sub ? 'subscribed' : 'unsubscribed'))
+      .catch(() => setState('unsupported'))
   }, [])
 
   async function handleClick() {
@@ -28,15 +27,17 @@ export default function PushNotificationToggle() {
       if (permission !== 'granted') return
       try {
         const sub = await subscribeToPush()
-        const { endpoint, keys } = sub.toJSON() as {
+        const json = sub.toJSON() as {
           endpoint: string
-          keys: { p256dh: string; auth: string }
+          keys?: { p256dh: string; auth: string }
         }
-        await fetch('/api/alerts/subscribe', {
+        if (!json.keys?.p256dh || !json.keys?.auth) throw new Error('invalid subscription')
+        const res = await fetch('/api/alerts/subscribe', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ endpoint, keys }),
+          body: JSON.stringify({ endpoint: json.endpoint, keys: json.keys }),
         })
+        if (!res.ok) throw new Error('subscribe failed')
         setState('subscribed')
       } catch {
         // silent — user may retry
@@ -46,11 +47,12 @@ export default function PushNotificationToggle() {
         const reg = await navigator.serviceWorker.ready
         const sub = await reg.pushManager.getSubscription()
         if (sub) {
-          await fetch('/api/alerts/unsubscribe', {
+          const res = await fetch('/api/alerts/unsubscribe', {
             method: 'DELETE',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ endpoint: sub.endpoint }),
           })
+          if (!res.ok) throw new Error('unsubscribe failed')
           await unsubscribeFromPush()
         }
         setState('unsubscribed')
