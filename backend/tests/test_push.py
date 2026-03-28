@@ -23,6 +23,8 @@ def test_send_push_notification_calls_webpush():
     assert payload["title"] == "Title"
     assert payload["body"] == "Body text"
     assert payload["url"] == "/stock/AAPL"
+    assert "vapid_private_key" in kwargs
+    assert kwargs["vapid_claims"]["sub"].startswith("mailto:")
 
 
 def test_send_push_notification_deletes_stale_sub_on_410():
@@ -65,6 +67,8 @@ def test_send_push_notification_does_not_raise_on_other_error():
     db = MagicMock()
     with patch("app.services.push.webpush", side_effect=Exception("network timeout")):
         send_push_notification(_sub(), "T", "B", "/", db)  # must not raise
+
+    db.table.assert_not_called()
 
 
 def test_send_push_notification_does_not_delete_on_non_stale_webpush_exception():

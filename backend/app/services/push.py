@@ -27,9 +27,12 @@ def send_push_notification(
         )
     except WebPushException as exc:
         if exc.response is not None and exc.response.status_code in (410, 404):
-            db.table("push_subscriptions").delete().eq(
-                "endpoint", subscription["endpoint"]
-            ).execute()
+            try:
+                db.table("push_subscriptions").delete().eq(
+                    "endpoint", subscription["endpoint"]
+                ).execute()
+            except Exception as db_exc:
+                logger.error("[push] Failed to delete stale subscription: %s", db_exc)
         else:
             logger.error("[push] WebPush failed for %s: %s", subscription["endpoint"], exc)
     except Exception as exc:
