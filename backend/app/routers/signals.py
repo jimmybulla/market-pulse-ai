@@ -4,7 +4,7 @@ from fastapi import APIRouter, Query, HTTPException, Depends
 from supabase import Client
 
 from app.database import get_db
-from app.models.signal import SignalResponse, PaginatedSignals
+from app.models.signal import SignalResponse, PaginatedSignals, SignalHistoryEntry
 
 router = APIRouter()
 
@@ -48,6 +48,33 @@ def list_signals(
         "limit": limit,
         "offset": offset,
     }
+
+
+@router.get("/history/{ticker}", response_model=list[SignalHistoryEntry])
+def get_signal_history(ticker: str, db: Client = Depends(get_db)):
+    stock = (
+        db.table("stocks")
+        .select("id")
+        .eq("ticker", ticker.upper())
+        .maybe_single()
+        .execute()
+    )
+    if not stock.data:
+        raise HTTPException(status_code=404, detail="Stock not found")
+
+    rows = (
+        db.table("signal_history")
+        .select(
+            "id, direction, confidence, expected_move_low, expected_move_high, "
+            "horizon_days, price_at_signal, actual_move, was_correct, accuracy_notes, created_at"
+        )
+        .eq("stock_id", stock.data["id"])
+        .order("created_at", desc=True)
+        .limit(50)
+        .execute()
+        .data or []
+    )
+    return rows
 
 
 @router.get("/{signal_id}", response_model=SignalResponse)

@@ -151,3 +151,52 @@ def test_resolve_skips_rows_whose_horizon_has_not_passed():
         resolve_signal_outcomes(db)
     hist.update.assert_not_called()
     mock_ticker.assert_not_called()
+
+
+def test_signal_history_returns_404_for_unknown_ticker(client):
+    c, mock_db = client
+    mock_db.table.return_value.select.return_value.eq.return_value.maybe_single.return_value.execute.return_value = MagicMock(data=None)
+    response = c.get("/signals/history/FAKEXYZ")
+    assert response.status_code == 404
+
+
+def test_signal_history_returns_rows_for_known_ticker(client):
+    c, mock_db = client
+
+    stock_mock = MagicMock()
+    stock_mock.select.return_value.eq.return_value.maybe_single.return_value.execute.return_value = MagicMock(
+        data={"id": "stock-aapl"}
+    )
+
+    history_mock = MagicMock()
+    from datetime import datetime, timezone
+    history_mock.select.return_value.eq.return_value.order.return_value.limit.return_value.execute.return_value = MagicMock(
+        data=[{
+            "id": "hist-1",
+            "direction": "bullish",
+            "confidence": 0.75,
+            "expected_move_low": 0.03,
+            "expected_move_high": 0.07,
+            "horizon_days": 5,
+            "price_at_signal": 150.0,
+            "actual_move": None,
+            "was_correct": None,
+            "accuracy_notes": None,
+            "created_at": datetime.now(timezone.utc).isoformat(),
+        }]
+    )
+
+    def side(t):
+        if t == "stocks":
+            return stock_mock
+        if t == "signal_history":
+            return history_mock
+        return MagicMock()
+
+    mock_db.table.side_effect = side
+
+    response = c.get("/signals/history/AAPL")
+    assert response.status_code == 200
+    data = response.json()
+    assert len(data) == 1
+    assert data[0]["direction"] == "bullish"
