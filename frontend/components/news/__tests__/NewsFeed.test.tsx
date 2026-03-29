@@ -1,33 +1,57 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, fireEvent } from '@testing-library/react'
 import NewsFeed from '../NewsFeed'
-import type { NewsArticleResponse } from '@/lib/types'
+import type { NewsFeedItem } from '@/lib/types'
 
-const articles: NewsArticleResponse[] = [
-  {
-    id: '1', source_id: null,
-    headline: 'First article', body: null, url: null,
-    published_at: '2026-03-26T15:00:00Z', fetched_at: '2026-03-26T16:00:00Z',
-    tickers: ['AAPL'], sentiment_score: 0.5, event_type: 'earnings',
-    novelty_score: 0.8, credibility_score: 0.9, severity: 0.5,
-  },
-  {
-    id: '2', source_id: null,
-    headline: 'Second article', body: null, url: null,
-    published_at: '2026-03-26T14:00:00Z', fetched_at: '2026-03-26T15:00:00Z',
-    tickers: ['MSFT'], sentiment_score: 0.6, event_type: 'product',
-    novelty_score: 0.7, credibility_score: 0.85, severity: 0.4,
-  },
-]
+const makeItem = (overrides: Partial<NewsFeedItem> = {}): NewsFeedItem => ({
+  id: 'art-1',
+  headline: 'Test headline',
+  url: 'https://example.com',
+  published_at: '2026-03-20T10:00:00Z',
+  sentiment_score: 0.3,
+  event_type: 'earnings',
+  credibility_score: 0.8,
+  tickers: ['AAPL'],
+  signal_direction: 'bullish',
+  signal_confidence: 0.75,
+  signal_opportunity_score: 0.8,
+  ...overrides,
+})
 
 describe('NewsFeed', () => {
-  it('renders all articles', () => {
-    render(<NewsFeed articles={articles} />)
-    expect(screen.getByText('First article')).toBeInTheDocument()
-    expect(screen.getByText('Second article')).toBeInTheDocument()
+  it('renders empty state when items is empty', () => {
+    render(<NewsFeed items={[]} />)
+    expect(screen.getByText('No signal-linked news yet')).toBeInTheDocument()
   })
 
-  it('shows empty state when no articles', () => {
-    render(<NewsFeed articles={[]} />)
-    expect(screen.getByText('No recent news')).toBeInTheDocument()
+  it('renders all items when no filter is active', () => {
+    const items = [
+      makeItem({ id: 'art-1', headline: 'Story 1' }),
+      makeItem({ id: 'art-2', headline: 'Story 2' }),
+    ]
+    render(<NewsFeed items={items} />)
+    expect(screen.getByText('Story 1')).toBeInTheDocument()
+    expect(screen.getByText('Story 2')).toBeInTheDocument()
+  })
+
+  it('filters to bullish direction only', () => {
+    const items = [
+      makeItem({ id: 'art-1', headline: 'Bullish story', signal_direction: 'bullish' }),
+      makeItem({ id: 'art-2', headline: 'Bearish story', signal_direction: 'bearish' }),
+    ]
+    render(<NewsFeed items={items} />)
+    fireEvent.change(screen.getByLabelText('Direction'), { target: { value: 'bullish' } })
+    expect(screen.getByText('Bullish story')).toBeInTheDocument()
+    expect(screen.queryByText('Bearish story')).not.toBeInTheDocument()
+  })
+
+  it('filters to earnings event type only', () => {
+    const items = [
+      makeItem({ id: 'art-1', headline: 'Earnings story', event_type: 'earnings' }),
+      makeItem({ id: 'art-2', headline: 'Regulation story', event_type: 'regulation' }),
+    ]
+    render(<NewsFeed items={items} />)
+    fireEvent.change(screen.getByLabelText('Event Type'), { target: { value: 'earnings' } })
+    expect(screen.getByText('Earnings story')).toBeInTheDocument()
+    expect(screen.queryByText('Regulation story')).not.toBeInTheDocument()
   })
 })
