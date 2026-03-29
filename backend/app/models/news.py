@@ -22,3 +22,17 @@ class PaginatedNews(BaseModel):
     total: int
     limit: int
     offset: int
+
+
+class NewsFeedItem(BaseModel):
+    id: str
+    headline: str
+    url: str
+    published_at: Optional[datetime] = None
+    sentiment_score: Optional[float] = None
+    event_type: Optional[str] = None
+    credibility_score: Optional[float] = None
+    tickers: list[str] = []
+    signal_direction: str
+    signal_confidence: float
+    signal_opportunity_score: float
