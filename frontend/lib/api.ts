@@ -4,6 +4,7 @@ import type {
   PaginatedStocks, StockWithSignal,
   PaginatedNews, SignalDirection,
   SignalHistoryEntry, BacktestingStats,
+  NewsFeedItem,
 } from './types'
 
 const BACKEND = process.env.BACKEND_URL || 'http://localhost:8000'
@@ -109,5 +110,15 @@ export async function getBacktestingStats(): Promise<BacktestingStats> {
       avg_predicted_move: 0,
       avg_actual_move: 0,
     }
+  }
+}
+
+export async function getNewsFeed(): Promise<NewsFeedItem[]> {
+  try {
+    const res = await fetch(`${BACKEND}/news/feed`, { cache: 'no-store' })
+    if (!res.ok) return []
+    return res.json()
+  } catch {
+    return []
   }
 }

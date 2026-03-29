@@ -112,3 +112,17 @@ export interface BacktestingStats {
   avg_predicted_move: number
   avg_actual_move: number
 }
+
+export interface NewsFeedItem {
+  id: string
+  headline: string
+  url: string
+  published_at: string
+  sentiment_score: number | null
+  event_type: string | null
+  credibility_score: number | null
+  tickers: string[]
+  signal_direction: string
+  signal_confidence: number
+  signal_opportunity_score: number
+}
