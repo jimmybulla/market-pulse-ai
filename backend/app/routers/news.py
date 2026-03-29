@@ -38,6 +38,8 @@ def list_news(
     }
 
 
+# NOTE: /feed must be registered before /{article_id} to avoid FastAPI
+# routing "feed" as an article_id path parameter.
 @router.get("/feed", response_model=list[NewsFeedItem])
 def get_news_feed(
     direction: Optional[str] = Query(None),
@@ -48,6 +50,7 @@ def get_news_feed(
         db.table("signals")
         .select("id, direction, confidence, opportunity_score, evidence")
         .order("opportunity_score", desc=True)
+        .limit(500)
         .execute()
         .data or []
     )

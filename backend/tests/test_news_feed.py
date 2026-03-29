@@ -29,7 +29,7 @@ def _article(id="art-1", headline="Market moves", event_type="earnings", tickers
 def _setup_client(mock_db, signals_data, articles_data):
     """Set up mock_db to return signals and articles from separate tables."""
     signals_tbl = MagicMock()
-    signals_tbl.select.return_value.order.return_value.execute.return_value = MagicMock(
+    signals_tbl.select.return_value.order.return_value.limit.return_value.execute.return_value = MagicMock(
         data=signals_data
     )
     articles_tbl = MagicMock()
@@ -50,7 +50,7 @@ def _setup_client(mock_db, signals_data, articles_data):
 def test_news_feed_returns_empty_when_no_signals(client):
     c, mock_db = client
     signals_tbl = MagicMock()
-    signals_tbl.select.return_value.order.return_value.execute.return_value = MagicMock(data=[])
+    signals_tbl.select.return_value.order.return_value.limit.return_value.execute.return_value = MagicMock(data=[])
     mock_db.table.return_value = signals_tbl
     response = c.get("/news/feed")
     assert response.status_code == 200
@@ -125,7 +125,7 @@ def test_news_feed_filters_by_event_type(client):
 def test_news_feed_skips_signals_without_article_ids(client):
     c, mock_db = client
     signals_tbl = MagicMock()
-    signals_tbl.select.return_value.order.return_value.execute.return_value = MagicMock(data=[
+    signals_tbl.select.return_value.order.return_value.limit.return_value.execute.return_value = MagicMock(data=[
         {"id": "sig-1", "direction": "bullish", "confidence": 0.75,
          "opportunity_score": 0.9, "evidence": None},
         {"id": "sig-2", "direction": "bullish", "confidence": 0.75,
