@@ -117,7 +117,7 @@ export interface NewsFeedItem {
   id: string
   headline: string
   url: string
-  published_at: string
+  published_at: string | null
   sentiment_score: number | null
   event_type: string | null
   credibility_score: number | null
