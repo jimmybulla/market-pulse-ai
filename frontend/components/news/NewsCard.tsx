@@ -64,7 +64,7 @@ export default function NewsCard({ item }: { item: NewsFeedItem }) {
             {sentimentSign}{item.sentiment_score.toFixed(2)}
           </span>
         )}
-        <span>{new Date(item.published_at ?? '').toLocaleDateString()}</span>
+        <span>{item.published_at ? new Date(item.published_at).toLocaleDateString() : '—'}</span>
         <span>{sourceDomain(item.url)}</span>
       </div>
     </div>
