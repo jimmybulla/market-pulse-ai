@@ -40,21 +40,31 @@ def ingest_news(db: Client, tickers: list[str]) -> list[str]:
             continue
 
         for article in articles:
-            url = article.get("link", "")
+            # yfinance ≥0.2.54 wraps fields under article["content"]
+            content = article.get("content") or article
+            url = (
+                (content.get("canonicalUrl") or {}).get("url", "")
+                or content.get("link", "")
+            )
             if not url or url in existing_urls:
                 dup_count += 1
                 continue
 
             existing_urls.add(url)  # prevent re-insert within same run
 
-            ts = article.get("providerPublishTime")
-            if ts:
-                published_at = datetime.fromtimestamp(ts, tz=timezone.utc)
+            pub_date = content.get("pubDate") or content.get("providerPublishTime")
+            if isinstance(pub_date, str):
+                try:
+                    published_at = datetime.fromisoformat(pub_date.replace("Z", "+00:00"))
+                except ValueError:
+                    published_at = datetime.now(timezone.utc)
+            elif isinstance(pub_date, (int, float)):
+                published_at = datetime.fromtimestamp(pub_date, tz=timezone.utc)
             else:
                 published_at = datetime.now(timezone.utc)
 
             row = {
-                "headline":    article.get("title", ""),
+                "headline":    content.get("title", ""),
                 "url":         url,
                 "published_at": published_at.isoformat(),
                 "tickers":     [ticker],

@@ -58,10 +58,10 @@ def generate_signals(db: Client) -> None:
                 .select("id, sentiment_score, credibility_score, novelty_score, severity, event_type, url")
                 .gte("published_at", cutoff)
                 .filter("tickers", "cs", f'{{{stock["ticker"]}}}')  # PostgreSQL array @> (contains)
-                .neq("sentiment_score", "null")
                 .execute()
                 .data or []
             )
+            rows = [r for r in rows if r.get("sentiment_score") is not None]
 
             features = [
                 ArticleFeatures(
