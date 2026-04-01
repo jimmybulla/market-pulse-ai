@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge'
 import ChartsSection from '@/components/charts/ChartsSection'
 import SignalExpanded from '@/components/signals/SignalExpanded'
 import SignalHistory from '@/components/signals/SignalHistory'
-import NewsFeed from '@/components/news/NewsFeed'
+import ArticleList from '@/components/news/ArticleList'
 import TopBar from '@/components/layout/TopBar'
 import type { SignalDirection } from '@/lib/types'
 import { ArrowLeft } from 'lucide-react'
@@ -143,7 +143,7 @@ export default async function StockPage({
                 No articles found for {stock.ticker}
               </div>
             ) : (
-              <NewsFeed articles={news.data} />
+              <ArticleList articles={news.data} />
             )}
           </div>
         </section>

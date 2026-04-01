@@ -54,7 +54,7 @@ export default function SignalHistory({ ticker }: { ticker: string }) {
               {history.map((entry) => (
                 <tr key={entry.id} className="border-b border-white/4 last:border-0">
                   <td className="px-4 py-3 font-mono text-gray-400 text-xs">
-                    {new Date(entry.created_at).toLocaleDateString()}
+                    {entry.created_at.slice(0, 10)}
                   </td>
                   <td className={`px-4 py-3 ${entry.direction === 'bullish' ? 'text-profit' : 'text-loss'}`}>
                     {directionLabel(entry.direction)}
