@@ -10,6 +10,7 @@ from supabase import Client
 
 from app.services.features import extract_features
 from app.services.ingestor import ingest_news
+from app.services.newsapi_ingestor import ingest_newsapi
 from app.services.push import send_push_notification
 from app.services.scoring import ArticleFeatures, score_articles
 
@@ -378,15 +379,17 @@ def run_pipeline(db: Client) -> None:
     tickers = [s["ticker"] for s in stocks]
     logger.info("[pipeline] Starting pipeline run — %d stocks", len(tickers))
 
-    # Step 1: Ingest news
+    # Step 1: Ingest news (yfinance + NewsAPI)
     new_article_ids = ingest_news(db, tickers)
+    newsapi_ids = ingest_newsapi(db, tickers)
+    all_new_ids = list(set(new_article_ids + newsapi_ids))
 
     # Step 2: Extract features on new articles
-    if new_article_ids:
+    if all_new_ids:
         new_articles = (
             db.table("news_articles")
             .select("id, headline, url, published_at")
-            .in_("id", new_article_ids)
+            .in_("id", all_new_ids)
             .execute()
             .data or []
         )
