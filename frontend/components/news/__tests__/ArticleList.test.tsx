@@ -45,4 +45,16 @@ describe('ArticleList', () => {
     render(<ArticleList articles={[]} />)
     expect(screen.getByText('No articles found')).toBeInTheDocument()
   })
+
+  it('shows + prefix for non-negative sentiment and no prefix for negative', () => {
+    const { rerender } = render(
+      <ArticleList articles={[makeArticle({ sentiment_score: 0.75 })]} />
+    )
+    expect(screen.getByText('+0.75')).toBeInTheDocument()
+
+    rerender(
+      <ArticleList articles={[makeArticle({ sentiment_score: -0.32 })]} />
+    )
+    expect(screen.getByText('-0.32')).toBeInTheDocument()
+  })
 })
