@@ -85,4 +85,9 @@ describe('StocksTable', () => {
     fireEvent.change(screen.getByLabelText('Search'), { target: { value: 'ZZZZ' } })
     expect(screen.getByText('No stocks found')).toBeInTheDocument()
   })
+
+  it('renders empty state when stocks prop is empty', () => {
+    render(<StocksTable stocks={[]} />)
+    expect(screen.getByText('No stocks found')).toBeInTheDocument()
+  })
 })

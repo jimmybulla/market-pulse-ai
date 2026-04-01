@@ -1,5 +1,5 @@
 'use client'
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import Link from 'next/link'
 import type { StockResponse } from '@/lib/types'
 
@@ -11,9 +11,11 @@ export default function StocksTable({ stocks }: { stocks: StockResponse[] }) {
   const [sortKey, setSortKey] = useState<SortKey>('ticker')
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc')
 
-  const sectorOptions = Array.from(
-    new Set(stocks.map((s) => s.sector).filter((s): s is string => s !== null))
-  ).sort()
+  const sectorOptions = useMemo(
+    () =>
+      Array.from(new Set(stocks.map((s) => s.sector).filter(Boolean))).sort() as string[],
+    [stocks]
+  )
 
   function handleSort(key: SortKey) {
     if (key === sortKey) {
