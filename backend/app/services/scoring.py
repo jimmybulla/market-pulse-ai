@@ -52,9 +52,9 @@ def score_articles(articles: list[ArticleFeatures]) -> Optional[SignalResult]:
 
     if crash_risk_score > 0.75:
         direction, confidence = "crash_risk", crash_risk_score
-    elif opportunity_score > 0.6 and crash_risk_score < 0.3:
+    elif opportunity_score > 0.25 and crash_risk_score < 0.35:
         direction, confidence = "bullish", opportunity_score
-    elif opportunity_score < 0.4 and crash_risk_score > 0.6:
+    elif opportunity_score < 0.2 and crash_risk_score > 0.45:
         direction, confidence = "bearish", crash_risk_score
     else:
         return None
@@ -113,7 +113,7 @@ def _extract_drivers(articles: list[ArticleFeatures]) -> list[str]:
 
 def _risk_flags(opportunity: float, crash_risk: float, direction: str) -> list[str]:
     flags: list[str] = []
-    if direction == "bullish" and opportunity > 0.85:
+    if direction == "bullish" and opportunity > 0.65:
         flags.append("Overextended rally — high conviction")
     if direction == "bullish" and crash_risk > 0.20:
         flags.append("Elevated crash risk despite bullish signal")

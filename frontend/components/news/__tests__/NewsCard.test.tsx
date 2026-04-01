@@ -45,4 +45,10 @@ describe('NewsCard', () => {
     const el = screen.getByText('-0.18')
     expect(el).toHaveClass('text-loss')
   })
+
+  it('renders headline as plain text when url is empty', () => {
+    render(<NewsCard item={{ ...mockItem, url: '' }} />)
+    expect(screen.queryByRole('link', { name: /apple reports record earnings/i })).not.toBeInTheDocument()
+    expect(screen.getByText('Apple reports record earnings')).toBeInTheDocument()
+  })
 })

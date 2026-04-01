@@ -43,14 +43,18 @@ export default function NewsCard({ item }: { item: NewsFeedItem }) {
       </div>
 
       {/* Headline */}
-      <a
-        href={item.url}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="block text-sm font-medium text-white leading-snug hover:text-brand-cyan transition-colors"
-      >
-        {item.headline}
-      </a>
+      {item.url ? (
+        <a
+          href={item.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="block text-sm font-medium text-white leading-snug hover:text-brand-cyan transition-colors"
+        >
+          {item.headline}
+        </a>
+      ) : (
+        <p className="text-sm font-medium text-white leading-snug">{item.headline}</p>
+      )}
 
       {/* Footer: event type, sentiment, date, source */}
       <div className="flex items-center gap-3 flex-wrap text-xs text-gray-500">
@@ -64,8 +68,8 @@ export default function NewsCard({ item }: { item: NewsFeedItem }) {
             {sentimentSign}{item.sentiment_score.toFixed(2)}
           </span>
         )}
-        <span>{item.published_at ? new Date(item.published_at).toLocaleDateString() : '—'}</span>
-        <span>{sourceDomain(item.url)}</span>
+        <span>{item.published_at ? item.published_at.slice(0, 10) : '—'}</span>
+        {item.url && <span>{sourceDomain(item.url)}</span>}
       </div>
     </div>
   )
