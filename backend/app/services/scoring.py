@@ -52,7 +52,7 @@ def score_articles(articles: list[ArticleFeatures]) -> Optional[SignalResult]:
 
     if crash_risk_score > 0.75:
         direction, confidence = "crash_risk", crash_risk_score
-    elif opportunity_score > 0.25 and crash_risk_score < 0.35:
+    elif opportunity_score > 0.15 and crash_risk_score < 0.4:
         direction, confidence = "bullish", opportunity_score
     elif opportunity_score < 0.2 and crash_risk_score > 0.45:
         direction, confidence = "bearish", crash_risk_score

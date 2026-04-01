@@ -62,7 +62,7 @@ def generate_signals(db: Client) -> None:
                 .execute()
                 .data or []
             )
-            rows = [r for r in rows if r.get("sentiment_score") is not None]
+            rows = [r for r in rows if r.get("sentiment_score") is not None and r.get("credibility_score", 0) > 0]
 
             features = [
                 ArticleFeatures(
