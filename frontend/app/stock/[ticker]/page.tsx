@@ -61,7 +61,7 @@ export default async function StockPage({
           <div className="ml-auto flex items-center gap-3">
             {stock.last_price && (
               <span className="font-mono text-xl text-white">
-                ${stock.last_price.toLocaleString()}
+                ${stock.last_price.toFixed(2)}
               </span>
             )}
             {stock.sector && (

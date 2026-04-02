@@ -1,10 +1,11 @@
 'use client'
 
+import { useState, useEffect } from 'react'
 import { Badge } from '@/components/ui/badge'
 import type { NewsArticleResponse } from '@/lib/types'
 
 function timeAgo(dateStr: string | null): string {
-  if (!dateStr) return 'Unknown time'
+  if (!dateStr) return ''
   const diff = Date.now() - new Date(dateStr).getTime()
   const hours = Math.floor(diff / 3600000)
   if (hours < 1) return 'Just now'
@@ -28,6 +29,11 @@ interface NewsItemProps {
 
 export default function NewsItem({ article }: NewsItemProps) {
   const { headline, url, published_at, tickers, event_type } = article
+  const [relativeTime, setRelativeTime] = useState<string>('')
+
+  useEffect(() => {
+    setRelativeTime(timeAgo(published_at))
+  }, [published_at])
 
   const content = (
     <div className="flex items-start gap-3 py-3 px-4 hover:bg-surface-elevated transition-colors rounded-lg">
@@ -44,7 +50,7 @@ export default function NewsItem({ article }: NewsItemProps) {
               {event_type}
             </Badge>
           )}
-          <span className="text-xs text-gray-600">{timeAgo(published_at)}</span>
+          {relativeTime && <span className="text-xs text-gray-600">{relativeTime}</span>}
         </div>
       </div>
     </div>
