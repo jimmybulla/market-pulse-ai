@@ -76,7 +76,7 @@ def test_sentiment_trend_aggregates_by_day(client):
         {"published_at": "2026-03-27T14:00:00", "sentiment_score": 0.3},
         {"published_at": "2026-03-26T09:00:00", "sentiment_score": -0.2},
     ]
-    mock_db.table.return_value.select.return_value.contains.return_value.gte.return_value.neq.return_value.execute.return_value = mock_exec
+    mock_db.table.return_value.select.return_value.contains.return_value.gte.return_value.not_.is_.return_value.execute.return_value = mock_exec
     response = c.get("/stocks/AAPL/sentiment-trend?range=7d")
     assert response.status_code == 200
     body = response.json()
@@ -91,7 +91,7 @@ def test_sentiment_trend_empty_returns_200_empty_list(client):
     c, mock_db = client
     mock_exec = MagicMock()
     mock_exec.data = []
-    mock_db.table.return_value.select.return_value.contains.return_value.gte.return_value.neq.return_value.execute.return_value = mock_exec
+    mock_db.table.return_value.select.return_value.contains.return_value.gte.return_value.not_.is_.return_value.execute.return_value = mock_exec
     response = c.get("/stocks/AAPL/sentiment-trend")
     assert response.status_code == 200
     assert response.json()["data"] == []

@@ -20,8 +20,11 @@ def get_price_history(
     ticker: str,
     period: RangeParam = Query("30d", alias="range"),
 ):
+    days = _DAYS[period]
+    end = datetime.now(timezone.utc)
+    start = end - timedelta(days=days)
     try:
-        hist = yf.Ticker(ticker.upper()).history(period=period)
+        hist = yf.Ticker(ticker.upper()).history(start=start, end=end)
     except Exception:
         raise HTTPException(
             status_code=502,
@@ -53,7 +56,7 @@ def get_sentiment_trend(
         .select("published_at, sentiment_score")
         .contains("tickers", [ticker.upper()])
         .gte("published_at", cutoff)
-        .neq("sentiment_score", "null")
+        .not_.is_("sentiment_score", "null")
         .execute()
         .data
         or []
