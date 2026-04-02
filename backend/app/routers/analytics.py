@@ -1,12 +1,19 @@
 # backend/app/routers/analytics.py
-from fastapi import APIRouter, Depends
+from collections import defaultdict
+from datetime import datetime
 from statistics import mean
+from typing import Literal
+
+from fastapi import APIRouter, Depends, Query
+from pydantic import BaseModel
 from supabase import Client
 
 from app.database import get_db
 
 router = APIRouter()
 
+
+# ── /accuracy ─────────────────────────────────────────────────────────
 
 @router.get("/accuracy")
 def get_accuracy(db: Client = Depends(get_db)):
@@ -40,6 +47,8 @@ def get_accuracy(db: Client = Depends(get_db)):
     }
 
 
+# ── /backtesting ──────────────────────────────────────────────────────
+
 @router.get("/backtesting")
 def get_backtesting(db: Client = Depends(get_db)):
     rows = (
@@ -48,7 +57,7 @@ def get_backtesting(db: Client = Depends(get_db)):
             "direction, confidence, expected_move_low, expected_move_high, "
             "actual_move, was_correct"
         )
-        .neq("was_correct", "null")
+        .not_.is_("was_correct", "null")
         .execute()
         .data or []
     )
@@ -91,9 +100,8 @@ def get_backtesting(db: Client = Depends(get_db)):
                 "hit_rate": round(sum(1 for r in t_rows if r["was_correct"]) / len(t_rows), 4),
             }
 
-    avg_predicted = mean(
-        (r["expected_move_low"] + r["expected_move_high"]) / 2 for r in rows
-    )
+    predicted_moves = [(r["expected_move_low"] + r["expected_move_high"]) / 2 for r in rows]
+    avg_predicted = mean(predicted_moves) if predicted_moves else 0.0
     correct_rows = [r for r in rows if r["was_correct"] and r.get("actual_move") is not None]
     avg_actual = mean(abs(r["actual_move"]) for r in correct_rows) if correct_rows else 0.0
 
@@ -105,3 +113,49 @@ def get_backtesting(db: Client = Depends(get_db)):
         "avg_predicted_move": round(avg_predicted, 4),
         "avg_actual_move": round(avg_actual, 4),
     }
+
+
+# ── /performance-over-time ────────────────────────────────────────────
+
+class PerformanceBucket(BaseModel):
+    period: str
+    hit_rate: float
+    total: int
+
+
+PeriodParam = Literal["weekly", "monthly"]
+
+
+@router.get("/performance-over-time", response_model=list[PerformanceBucket])
+def get_performance_over_time(
+    period: PeriodParam = Query(...),
+    db: Client = Depends(get_db),
+):
+    rows = (
+        db.table("signal_history")
+        .select("was_correct, created_at")
+        .not_.is_("was_correct", "null")
+        .execute()
+        .data or []
+    )
+
+    if not rows:
+        return []
+
+    buckets: dict[str, list[bool]] = defaultdict(list)
+    for row in rows:
+        dt = datetime.fromisoformat(row["created_at"].replace("Z", "+00:00"))
+        if period == "weekly":
+            key = f"{dt.isocalendar()[0]}-W{dt.isocalendar()[1]:02d}"
+        else:
+            key = dt.strftime("%Y-%m")
+        buckets[key].append(row["was_correct"])
+
+    return [
+        PerformanceBucket(
+            period=key,
+            hit_rate=round(sum(vals) / len(vals), 4),
+            total=len(vals),
+        )
+        for key, vals in sorted(buckets.items())
+    ]
