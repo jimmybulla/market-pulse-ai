@@ -3,12 +3,15 @@ from collections import defaultdict
 from datetime import datetime, timedelta, timezone
 from typing import Literal
 
+import logging
+
 import yfinance as yf
 from fastapi import APIRouter, Depends, HTTPException, Query
 from supabase import Client
 
 from app.database import get_db
 
+logger = logging.getLogger(__name__)
 router = APIRouter()
 
 RangeParam = Literal["7d", "30d", "90d"]
@@ -25,10 +28,11 @@ def get_price_history(
     start = end - timedelta(days=days)
     try:
         hist = yf.Ticker(ticker.upper()).history(start=start, end=end)
-    except Exception:
+    except Exception as exc:
+        logger.error("[charts] price-history error for %s: %s: %s", ticker.upper(), type(exc).__name__, exc)
         raise HTTPException(
             status_code=502,
-            detail=f"Failed to fetch price data for {ticker.upper()}",
+            detail=f"Failed to fetch price data for {ticker.upper()}: {type(exc).__name__}",
         )
     if hist.empty:
         raise HTTPException(
