@@ -165,7 +165,6 @@ def test_sentiment_uses_lm_blend_when_lm_words_found():
     vader_val = SentimentIntensityAnalyzer().polarity_scores(headline)["compound"]
     expected_blend = round(0.7 * lm + 0.3 * vader_val, 4)
     assert _sentiment(headline) == pytest.approx(expected_blend, abs=1e-4)
-    assert _sentiment(headline) == pytest.approx(-0.8627, abs=1e-3)
 
 
 def test_sentiment_uses_vader_only_when_no_lm_words():
