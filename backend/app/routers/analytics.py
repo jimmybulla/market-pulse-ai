@@ -93,7 +93,7 @@ def get_backtesting(db: Client = Depends(get_db)):
 
     by_confidence_tier: dict = {}
     for t in ("high", "medium", "low"):
-        t_rows = [r for r in rows if _tier(r["confidence"]) == t]
+        t_rows = [r for r in rows if r.get("confidence") is not None and _tier(r["confidence"]) == t]
         if t_rows:
             by_confidence_tier[t] = {
                 "total": len(t_rows),
@@ -146,7 +146,7 @@ def get_performance_over_time(
     for row in rows:
         dt = datetime.fromisoformat(row["created_at"].replace("Z", "+00:00"))
         if period == "weekly":
-            key = f"{dt.isocalendar()[0]}-W{dt.isocalendar()[1]:02d}"
+            key = f"{dt.isocalendar()[0]}-W{dt.isocalendar()[1]:02d}"  # zero-pad week for correct lex sort
         else:
             key = dt.strftime("%Y-%m")
         buckets[key].append(row["was_correct"])

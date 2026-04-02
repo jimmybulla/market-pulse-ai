@@ -84,6 +84,10 @@ def test_backtesting_calculates_hit_rate(client):
     assert body["overall_hit_rate"] == pytest.approx(2 / 3, abs=1e-4)
     assert "bullish" in body["by_direction"]
     assert body["by_direction"]["bullish"]["hit_rate"] == pytest.approx(0.5, abs=1e-4)
+    assert "high" in body["by_confidence_tier"]   # conf=0.85 → high
+    assert body["by_confidence_tier"]["high"]["total"] == 1
+    assert "medium" in body["by_confidence_tier"]  # conf=0.75, 0.65 → medium
+    assert body["by_confidence_tier"]["medium"]["total"] == 2
 
 
 # ── /analytics/performance-over-time ─────────────────────────────────
@@ -127,6 +131,8 @@ def test_performance_monthly_groups_by_month(client):
     assert data[0]["hit_rate"] == 1.0
     assert data[1]["period"] == "2026-03"
     assert data[1]["hit_rate"] == pytest.approx(0.5, abs=1e-4)
+    assert data[0]["total"] == 1
+    assert data[1]["total"] == 2
 
 
 def test_performance_empty_returns_empty_list(client):
