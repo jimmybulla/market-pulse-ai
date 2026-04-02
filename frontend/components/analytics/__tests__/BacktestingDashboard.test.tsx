@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react'
 import BacktestingDashboard from '../BacktestingDashboard'
-import type { BacktestingStats } from '@/lib/types'
+import type { BacktestingStats, PerformanceData } from '@/lib/types'
 
 const emptyStats: BacktestingStats = {
   total_resolved: 0,
@@ -26,30 +26,32 @@ const richStats: BacktestingStats = {
   avg_actual_move: 0.043,
 }
 
+const emptyPerf: PerformanceData = { weekly: [], monthly: [] }
+
 describe('BacktestingDashboard', () => {
   it('renders empty state when total_resolved is 0', () => {
-    render(<BacktestingDashboard stats={emptyStats} />)
+    render(<BacktestingDashboard stats={emptyStats} performanceData={emptyPerf} />)
     expect(screen.getByText(/No resolved signals yet/i)).toBeInTheDocument()
   })
 
   it('renders overall hit rate stat card', () => {
-    render(<BacktestingDashboard stats={richStats} />)
+    render(<BacktestingDashboard stats={richStats} performanceData={emptyPerf} />)
     expect(screen.getByText('70.0%')).toBeInTheDocument()
   })
 
   it('renders total resolved stat card', () => {
-    render(<BacktestingDashboard stats={richStats} />)
+    render(<BacktestingDashboard stats={richStats} performanceData={emptyPerf} />)
     expect(screen.getByText('10')).toBeInTheDocument()
   })
 
   it('renders by_direction table rows', () => {
-    render(<BacktestingDashboard stats={richStats} />)
+    render(<BacktestingDashboard stats={richStats} performanceData={emptyPerf} />)
     expect(screen.getByText('bullish')).toBeInTheDocument()
     expect(screen.getByText('bearish')).toBeInTheDocument()
   })
 
   it('renders by_confidence_tier table rows', () => {
-    render(<BacktestingDashboard stats={richStats} />)
+    render(<BacktestingDashboard stats={richStats} performanceData={emptyPerf} />)
     expect(screen.getByText(/high/i)).toBeInTheDocument()
     expect(screen.getByText(/medium/i)).toBeInTheDocument()
   })
