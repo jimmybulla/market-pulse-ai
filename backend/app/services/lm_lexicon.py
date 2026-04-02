@@ -20,7 +20,7 @@ LM_POSITIVE = frozenset({
     "focused", "foremost", "forward", "gain", "gains", "good", "great",
     "grow", "growing", "growth", "guarantee", "highest", "honorable",
     "ideal", "improve", "improved", "improvement", "improves", "increase",
-    "increased", "increases", "increasing", "industry-leading", "innovative",
+    "increased", "increases", "increasing", "innovative",
     "integrity", "leader", "leading", "legitimate", "lucrative", "momentum",
     "notable", "opportunity", "optimal", "outstanding", "outperform",
     "perfect", "positive", "premium", "proactive", "productive", "profit",
@@ -47,7 +47,7 @@ LM_NEGATIVE = frozenset({
     "damage", "danger", "decline", "default", "defect", "deficit",
     "delay", "delisted", "denial", "depress", "depressed", "difficulties",
     "difficulty", "disaster", "disclosure", "disruption", "dispute",
-    "disrupt", "doubt", "downgrade", "downside", "drop", "earnings-miss",
+    "disrupt", "doubt", "downgrade", "downside", "drop",
     "embezzlement", "erosion", "exposure", "fail", "failed", "failing",
     "failure", "fall", "falling", "fallen", "false", "fine", "fines",
     "fired", "force", "forfeit", "fraud", "guilty", "halt", "harm",
@@ -67,7 +67,7 @@ LM_NEGATIVE = frozenset({
     "termination", "troubled", "turmoil", "uncertain", "uncertainty",
     "underfunded", "unethical", "unfair", "violation", "volatile",
     "volatility", "warn", "warning", "weak", "weakened", "weakness",
-    "withdrawn", "write-down", "writedown", "writeoff", "wrote-off",
+    "withdrawn",
 })
 
 _TOKEN_RE = re.compile(r"[a-z]+")

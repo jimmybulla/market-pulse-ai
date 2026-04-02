@@ -44,5 +44,10 @@ def test_score_clamped_lower():
 
 def test_score_range():
     score = lm_score("earnings beat expectations with record profit")
-    if score is not None:
-        assert -1.0 <= score <= 1.0
+    assert score is not None
+    assert -1.0 <= score <= 1.0
+
+
+def test_whitespace_only_returns_none():
+    score = lm_score("   ")
+    assert score is None
