@@ -67,7 +67,7 @@ LM_NEGATIVE = frozenset({
     "termination", "troubled", "turmoil", "uncertain", "uncertainty",
     "underfunded", "unethical", "unfair", "violation", "volatile",
     "volatility", "warn", "warning", "weak", "weakened", "weakness",
-    "withdrawn",
+    "withdrawn", "writedown", "writeoff",
 })
 
 _TOKEN_RE = re.compile(r"[a-z]+")
