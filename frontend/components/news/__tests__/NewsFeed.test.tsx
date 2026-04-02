@@ -54,4 +54,15 @@ describe('NewsFeed', () => {
     expect(screen.getByText('Earnings story')).toBeInTheDocument()
     expect(screen.queryByText('Regulation story')).not.toBeInTheDocument()
   })
+
+  it('filters m&a event type using correct value', () => {
+    const items = [
+      makeItem({ id: 'art-1', headline: 'M&A deal story', event_type: 'm&a' }),
+      makeItem({ id: 'art-2', headline: 'Earnings story', event_type: 'earnings' }),
+    ]
+    render(<NewsFeed items={items} />)
+    fireEvent.change(screen.getByLabelText('Event Type'), { target: { value: 'm&a' } })
+    expect(screen.getByText('M&A deal story')).toBeInTheDocument()
+    expect(screen.queryByText('Earnings story')).not.toBeInTheDocument()
+  })
 })

@@ -3,7 +3,7 @@ import { useState } from 'react'
 import type { NewsFeedItem } from '@/lib/types'
 import NewsCard from './NewsCard'
 
-export default function NewsFeed({ items }: { items: NewsFeedItem[] }) {
+export default function NewsFeed({ items = [] }: { items: NewsFeedItem[] }) {
   const [direction, setDirection] = useState('')
   const [eventType, setEventType] = useState('')
 
@@ -38,10 +38,10 @@ export default function NewsFeed({ items }: { items: NewsFeedItem[] }) {
           <option value="">All Event Types</option>
           <option value="earnings">Earnings</option>
           <option value="regulation">Regulation</option>
-          <option value="m_a">M&amp;A</option>
-          <option value="product_launch">Product Launch</option>
-          <option value="executive_change">Executive Change</option>
-          <option value="other">Other</option>
+          <option value="m&a">M&amp;A</option>
+          <option value="product">Product</option>
+          <option value="executive">Executive</option>
+          <option value="macro">Macro</option>
         </select>
       </div>
 
