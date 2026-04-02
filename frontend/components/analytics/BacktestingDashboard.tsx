@@ -60,9 +60,12 @@ function PerformanceChart({ data }: { data: PerformanceBucket[] }) {
           contentStyle={{ background: '#1a1f2e', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 8 }}
           labelStyle={{ color: '#e5e7eb', marginBottom: 4 }}
           itemStyle={{ color: '#9ca3af' }}
-          formatter={(value: number, name: string) =>
-            name === 'Hit Rate' ? [`${value}%`, name] : [value, name]
-          }
+          formatter={((value: number | undefined, name: string) => {
+            if (value === undefined) {
+              return [value, name]
+            }
+            return name === 'Hit Rate' ? [`${value}%`, name] : [value, name]
+          }) as any}
         />
         <Legend wrapperStyle={{ fontSize: 12, color: '#9ca3af' }} />
         <Bar yAxisId="left" dataKey="Signals" fill="rgba(255,255,255,0.08)" radius={[3, 3, 0, 0]} />
