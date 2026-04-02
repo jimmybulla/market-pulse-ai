@@ -126,3 +126,14 @@ export interface NewsFeedItem {
   signal_confidence: number | null
   signal_opportunity_score: number | null
 }
+
+export interface PerformanceBucket {
+  period: string
+  hit_rate: number
+  total: number
+}
+
+export interface PerformanceData {
+  weekly: PerformanceBucket[]
+  monthly: PerformanceBucket[]
+}

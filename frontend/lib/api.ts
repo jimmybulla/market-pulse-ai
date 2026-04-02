@@ -4,7 +4,7 @@ import type {
   PaginatedStocks, StockWithSignal,
   PaginatedNews, SignalDirection,
   SignalHistoryEntry, BacktestingStats,
-  NewsFeedItem,
+  NewsFeedItem, PerformanceData,
 } from './types'
 
 const BACKEND = process.env.BACKEND_URL || 'http://localhost:8000'
@@ -120,5 +120,19 @@ export async function getNewsFeed(): Promise<NewsFeedItem[]> {
     return res.json()
   } catch {
     return []
+  }
+}
+
+export async function getPerformanceOverTime(): Promise<PerformanceData> {
+  try {
+    const [weeklyRes, monthlyRes] = await Promise.all([
+      fetch(`${BACKEND}/analytics/performance-over-time?period=weekly`, { next: { revalidate: 300 } }),
+      fetch(`${BACKEND}/analytics/performance-over-time?period=monthly`, { next: { revalidate: 300 } }),
+    ])
+    const weekly = weeklyRes.ok ? await weeklyRes.json() : []
+    const monthly = monthlyRes.ok ? await monthlyRes.json() : []
+    return { weekly, monthly }
+  } catch {
+    return { weekly: [], monthly: [] }
   }
 }
