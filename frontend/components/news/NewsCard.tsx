@@ -35,11 +35,13 @@ export default function NewsCard({ item }: { item: NewsFeedItem }) {
             {t}
           </span>
         ))}
-        <span
-          className={`text-xs font-medium ${item.signal_direction === 'bullish' ? 'text-profit' : 'text-loss'}`}
-        >
-          {directionLabel(item.signal_direction)} · {Math.round(item.signal_confidence * 100)}%
-        </span>
+        {item.signal_direction && item.signal_confidence !== null && (
+          <span
+            className={`text-xs font-medium ${item.signal_direction === 'bullish' ? 'text-profit' : 'text-loss'}`}
+          >
+            {directionLabel(item.signal_direction)} · {Math.round(item.signal_confidence * 100)}%
+          </span>
+        )}
       </div>
 
       {/* Headline */}

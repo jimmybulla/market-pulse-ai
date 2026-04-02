@@ -33,6 +33,6 @@ class NewsFeedItem(BaseModel):
     event_type: Optional[str] = None
     credibility_score: Optional[float] = None
     tickers: list[str] = []
-    signal_direction: str
-    signal_confidence: float
-    signal_opportunity_score: float
+    signal_direction: Optional[str] = None
+    signal_confidence: Optional[float] = None
+    signal_opportunity_score: Optional[float] = None

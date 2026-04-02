@@ -122,7 +122,7 @@ export interface NewsFeedItem {
   event_type: string | null
   credibility_score: number | null
   tickers: string[]
-  signal_direction: string
-  signal_confidence: number
-  signal_opportunity_score: number
+  signal_direction: string | null
+  signal_confidence: number | null
+  signal_opportunity_score: number | null
 }

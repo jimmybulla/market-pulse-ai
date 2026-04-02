@@ -46,6 +46,9 @@ def get_news_feed(
     event_type: Optional[str] = Query(None),
     db: Client = Depends(get_db),
 ):
+    from datetime import datetime, timezone, timedelta
+
+    # Build article_id → signal map from all signals
     signals = (
         db.table("signals")
         .select("id, direction, confidence, opportunity_score, evidence")
@@ -54,8 +57,6 @@ def get_news_feed(
         .execute()
         .data or []
     )
-
-    # Build article_id → signal map; first match wins (signals are DESC by opp_score)
     article_signal: dict = {}
     for sig in signals:
         evidence = sig.get("evidence") or {}
@@ -63,37 +64,49 @@ def get_news_feed(
             if aid not in article_signal:
                 article_signal[aid] = sig
 
-    if not article_signal:
-        return []
-
+    # Fetch recent articles with features (last 48 h, non-empty headline and url)
+    cutoff = (datetime.now(timezone.utc) - timedelta(hours=48)).isoformat()
     articles = (
         db.table("news_articles")
         .select(
             "id, headline, url, published_at, sentiment_score, "
             "event_type, credibility_score, tickers"
         )
-        .in_("id", list(article_signal.keys()))
+        .gte("published_at", cutoff)
+        .not_.is_("sentiment_score", "null")
+        .order("published_at", desc=True)
+        .limit(100)
         .execute()
         .data or []
     )
 
+    # Filter out articles with empty/missing headlines or URLs
+    articles = [a for a in articles if a.get("headline") and a.get("url")]
+
     result = []
     for article in articles:
         sig = article_signal.get(article["id"])
-        if not sig:
-            continue
-        if direction and sig["direction"] != direction:
+
+        if direction and (not sig or sig["direction"] != direction):
             continue
         if event_type and article.get("event_type") != event_type:
             continue
+
         result.append({
             **article,
-            "signal_direction": sig["direction"],
-            "signal_confidence": sig["confidence"],
-            "signal_opportunity_score": sig["opportunity_score"],
+            "signal_direction": sig["direction"] if sig else None,
+            "signal_confidence": sig["confidence"] if sig else None,
+            "signal_opportunity_score": sig["opportunity_score"] if sig else None,
         })
 
-    result.sort(key=lambda x: x["signal_opportunity_score"], reverse=True)
+    # Sort: signal-linked first (by opportunity_score), then by published_at
+    result.sort(
+        key=lambda x: (
+            x["signal_opportunity_score"] if x["signal_opportunity_score"] is not None else -1,
+            x["published_at"] or "",
+        ),
+        reverse=True,
+    )
     return result
 
 
