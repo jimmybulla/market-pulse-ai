@@ -5,6 +5,7 @@ from urllib.parse import urlparse
 
 from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
 
+from app.services.lm_lexicon import lm_score
 from app.services.scoring import ArticleFeatures
 
 logger = logging.getLogger(__name__)
@@ -45,7 +46,11 @@ EVENT_WEIGHTS: dict[str, float] = {
 
 
 def _sentiment(headline: str) -> float:
-    return _analyzer.polarity_scores(headline)["compound"]
+    vader_val = _analyzer.polarity_scores(headline)["compound"]
+    lm = lm_score(headline)
+    if lm is not None:
+        return round(0.7 * lm + 0.3 * vader_val, 4)
+    return round(vader_val, 4)
 
 
 def _event_type(headline: str) -> str:

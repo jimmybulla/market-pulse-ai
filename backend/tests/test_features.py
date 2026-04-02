@@ -151,3 +151,25 @@ def test_extract_features_returns_article_features():
     assert result.novelty_score == 0.85
     assert result.sentiment_score > 0
     assert 0.0 <= result.severity <= 1.0
+
+
+# --- _sentiment (LM blend) ---
+
+def test_sentiment_uses_lm_blend_when_lm_words_found():
+    # "bankruptcy losses liabilities" → LM_NEGATIVE heavy → score must be < 0
+    # VADER alone on this phrase is also negative, but LM blend makes it more so
+    from app.services.lm_lexicon import lm_score
+    from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
+    headline = "company faces bankruptcy amid mounting losses and liabilities"
+    lm = lm_score(headline)
+    vader_val = SentimentIntensityAnalyzer().polarity_scores(headline)["compound"]
+    expected_blend = round(0.7 * lm + 0.3 * vader_val, 4)
+    assert _sentiment(headline) == pytest.approx(expected_blend, abs=1e-4)
+
+
+def test_sentiment_uses_vader_only_when_no_lm_words():
+    # "the cat sat on the mat" has no LM words → VADER only
+    from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
+    headline = "the cat sat on the mat today"
+    vader_val = round(SentimentIntensityAnalyzer().polarity_scores(headline)["compound"], 4)
+    assert _sentiment(headline) == pytest.approx(vader_val, abs=1e-4)
