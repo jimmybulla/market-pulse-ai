@@ -88,7 +88,7 @@ describe('SignalRow — expanded panel', () => {
 
   it('shows target range', () => {
     render(<SignalRow signal={mockSignalWithPrice} isExpanded={true} onToggle={() => {}} />)
-    expect(screen.getByTestId('target-range')).toHaveTextContent('+3.0% → +7.0%')
+    expect(screen.getByTestId('target-range')).toHaveTextContent('3.0% → 7.0%')
   })
 
   it('shows explanation when present', () => {
@@ -110,8 +110,8 @@ describe('SignalRow — expanded panel', () => {
   it('shows historical analog section', () => {
     render(<SignalRow signal={mockSignalWithPrice} isExpanded={true} onToggle={() => {}} />)
     expect(screen.getByTestId('historical-section')).toBeInTheDocument()
-    // avg_move=0.05 → +5.0%, hit_rate=0.64 → 64%
-    expect(screen.getByText('+5.0%')).toBeInTheDocument()
+    // avg_move=0.05 → 5.0%, hit_rate=0.64 → 64%
+    expect(screen.getByText('5.0%')).toBeInTheDocument()
     expect(screen.getByText('64% hit rate')).toBeInTheDocument()
   })
 

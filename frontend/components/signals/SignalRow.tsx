@@ -36,12 +36,15 @@ export default function SignalRow({ signal, isExpanded, onToggle }: SignalRowPro
     actualPct = ((last_price - price_at_signal) / price_at_signal) * 100
 
     if (direction === 'bullish') {
-      progressPct = Math.min((actualPct / (expected_move_high * 100)) * 100, 100)
+      const bullishDenom = expected_move_high * 100
+      progressPct = bullishDenom !== 0 ? Math.min((actualPct / bullishDenom) * 100, 100) : 0
     } else if (direction === 'crash_risk') {
+      // crash_risk: treat a 10% drawdown as 100% progress toward crash threshold
       progressPct = Math.min((Math.abs(actualPct) / 10) * 100, 100)
     } else {
       // bearish
-      progressPct = Math.min((Math.abs(actualPct) / (Math.abs(expected_move_low) * 100)) * 100, 100)
+      const bearishDenom = Math.abs(expected_move_low) * 100
+      progressPct = bearishDenom !== 0 ? Math.min((Math.abs(actualPct) / bearishDenom) * 100, 100) : 0
     }
 
     const elapsedDays = (Date.now() - new Date(created_at).getTime()) / 86400000
@@ -126,7 +129,7 @@ export default function SignalRow({ signal, isExpanded, onToggle }: SignalRowPro
                   {actualPct >= 0 ? '+' : '-'}{Math.abs(actualPct).toFixed(1)}%
                 </span>
                 <span data-testid="target-range" className="text-gray-400">
-                  +{(expected_move_low * 100).toFixed(1)}% → +{(expected_move_high * 100).toFixed(1)}%
+                  {(expected_move_low * 100).toFixed(1)}% → {(expected_move_high * 100).toFixed(1)}%
                 </span>
                 <span className="text-gray-500">
                   {daysRemaining <= 0 ? 'Expired' : `${daysRemaining}d`}
@@ -185,7 +188,7 @@ export default function SignalRow({ signal, isExpanded, onToggle }: SignalRowPro
                 Historical Analog
               </h3>
               <div className="text-sm text-gray-300">
-                <p>+{(historical_analog.avg_move * 100).toFixed(1)}%</p>
+                <p>{(historical_analog.avg_move * 100).toFixed(1)}%</p>
                 <p className="text-xs text-gray-500 mt-1">
                   {Math.round(historical_analog.hit_rate * 100)}% hit rate
                 </p>
