@@ -332,7 +332,7 @@ def check_and_push_alerts(db: Client) -> None:
             "stock_id, direction, confidence, crash_risk_score, "
             "expected_move_low, expected_move_high, horizon_days"
         )
-        .gte("created_at", cutoff)
+        .gte("updated_at", cutoff)
         .execute()
         .data or []
     )
