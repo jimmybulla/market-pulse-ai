@@ -9,6 +9,7 @@ const mockSignal: SignalResponse = {
   stock_name: 'Apple Inc.',
   sector: 'Technology',
   last_price: 175.0,
+  price_at_signal: null,
   direction: 'bullish',
   confidence: 0.72,
   expected_move_low: 0.03,
@@ -24,6 +25,14 @@ const mockSignal: SignalResponse = {
   risk_flags: [],
   created_at: '2026-03-29T00:00:00Z',
   expires_at: null,
+}
+
+const mockSignalWithPrice: SignalResponse = {
+  ...mockSignal,
+  last_price: 182.0,
+  price_at_signal: 175.0,
+  explanation: 'Strong momentum driven by earnings beat.',
+  risk_flags: ['Sector volatility'],
 }
 
 describe('SignalRow', () => {
@@ -57,5 +66,62 @@ describe('SignalRow', () => {
     render(<SignalRow signal={mockSignal} isExpanded={false} onToggle={() => {}} />)
     const link = screen.getByRole('link', { name: /AAPL/i })
     expect(link).toHaveAttribute('href', '/stock/AAPL')
+  })
+})
+
+describe('SignalRow — expanded panel', () => {
+  it('shows progress bar when price_at_signal and last_price are present', () => {
+    render(<SignalRow signal={mockSignalWithPrice} isExpanded={true} onToggle={() => {}} />)
+    expect(screen.getByTestId('signal-progress-track')).toBeInTheDocument()
+  })
+
+  it('hides progress section when price_at_signal is null', () => {
+    render(<SignalRow signal={mockSignal} isExpanded={true} onToggle={() => {}} />)
+    expect(screen.queryByTestId('signal-progress-track')).not.toBeInTheDocument()
+  })
+
+  it('shows actual move percentage', () => {
+    render(<SignalRow signal={mockSignalWithPrice} isExpanded={true} onToggle={() => {}} />)
+    // (182-175)/175*100 = 4.0%
+    expect(screen.getByTestId('actual-move')).toHaveTextContent('+4.0%')
+  })
+
+  it('shows target range', () => {
+    render(<SignalRow signal={mockSignalWithPrice} isExpanded={true} onToggle={() => {}} />)
+    expect(screen.getByTestId('target-range')).toHaveTextContent('+3.0% → +7.0%')
+  })
+
+  it('shows explanation when present', () => {
+    render(<SignalRow signal={mockSignalWithPrice} isExpanded={true} onToggle={() => {}} />)
+    expect(screen.getByText('Strong momentum driven by earnings beat.')).toBeInTheDocument()
+  })
+
+  it('hides explanation when null', () => {
+    render(<SignalRow signal={mockSignal} isExpanded={true} onToggle={() => {}} />)
+    expect(screen.queryByTestId('explanation-section')).not.toBeInTheDocument()
+  })
+
+  it('shows evidence section', () => {
+    render(<SignalRow signal={mockSignalWithPrice} isExpanded={true} onToggle={() => {}} />)
+    expect(screen.getByTestId('evidence-section')).toBeInTheDocument()
+    expect(screen.getByText('2 articles')).toBeInTheDocument()
+  })
+
+  it('shows historical analog section', () => {
+    render(<SignalRow signal={mockSignalWithPrice} isExpanded={true} onToggle={() => {}} />)
+    expect(screen.getByTestId('historical-section')).toBeInTheDocument()
+    // avg_move=0.05 → +5.0%, hit_rate=0.64 → 64%
+    expect(screen.getByText('+5.0%')).toBeInTheDocument()
+    expect(screen.getByText('64% hit rate')).toBeInTheDocument()
+  })
+
+  it('shows risk flags when present', () => {
+    render(<SignalRow signal={mockSignalWithPrice} isExpanded={true} onToggle={() => {}} />)
+    expect(screen.getByText('Sector volatility')).toBeInTheDocument()
+  })
+
+  it('hides risk flags section when array is empty', () => {
+    render(<SignalRow signal={mockSignal} isExpanded={true} onToggle={() => {}} />)
+    expect(screen.queryByTestId('risk-flags-section')).not.toBeInTheDocument()
   })
 })
