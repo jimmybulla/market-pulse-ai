@@ -167,34 +167,30 @@ export default function SignalRow({ signal, isExpanded, onToggle }: SignalRowPro
             )}
 
             {/* Evidence */}
-            {evidence && (
-              <div data-testid="evidence-section" className="mb-4">
-                <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
-                  Evidence
-                </h3>
-                <div className="text-sm text-gray-300">
-                  <p>{evidence.article_count} articles</p>
-                  <p className="text-xs text-gray-500 mt-1">
-                    {Math.round(evidence.avg_credibility * 100)}% avg credibility
-                  </p>
-                </div>
+            <div data-testid="evidence-section" className="mb-4">
+              <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
+                Evidence
+              </h3>
+              <div className="text-sm text-gray-300">
+                <p>{evidence.article_count} articles</p>
+                <p className="text-xs text-gray-500 mt-1">
+                  {Math.round(evidence.avg_credibility * 100)}% avg credibility
+                </p>
               </div>
-            )}
+            </div>
 
             {/* Historical Analog */}
-            {historical_analog && (
-              <div data-testid="historical-section" className="mb-4">
-                <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
-                  Historical Analog
-                </h3>
-                <div className="text-sm text-gray-300">
-                  <p>+{(historical_analog.avg_move * 100).toFixed(1)}%</p>
-                  <p className="text-xs text-gray-500 mt-1">
-                    {Math.round(historical_analog.hit_rate * 100)}% hit rate
-                  </p>
-                </div>
+            <div data-testid="historical-section" className="mb-4">
+              <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
+                Historical Analog
+              </h3>
+              <div className="text-sm text-gray-300">
+                <p>+{(historical_analog.avg_move * 100).toFixed(1)}%</p>
+                <p className="text-xs text-gray-500 mt-1">
+                  {Math.round(historical_analog.hit_rate * 100)}% hit rate
+                </p>
               </div>
-            )}
+            </div>
 
             {/* Risk Flags */}
             {risk_flags.length > 0 && (
