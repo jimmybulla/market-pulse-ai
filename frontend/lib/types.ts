@@ -22,6 +22,7 @@ export interface SignalResponse {
   stock_name: string
   sector: string | null
   last_price: number | null
+  price_at_signal: number | null
   direction: SignalDirection
   confidence: number
   expected_move_low: number
