@@ -107,7 +107,7 @@ def get_backtesting(db: Client = Depends(get_db)):
 
     return {
         "total_resolved": total,
-        "overall_hit_rate": round(correct_count / total, 4),
+        "overall_hit_rate": round(correct_count / total, 4) if total else 0.0,
         "by_direction": by_direction,
         "by_confidence_tier": by_confidence_tier,
         "avg_predicted_move": round(avg_predicted, 4),

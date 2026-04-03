@@ -204,7 +204,7 @@ def test_signal_history_returns_rows_for_known_ticker(client):
 
 def test_backtesting_returns_zeros_when_no_resolved_signals(client):
     c, mock_db = client
-    mock_db.table.return_value.select.return_value.neq.return_value.execute.return_value = MagicMock(data=[])
+    mock_db.table.return_value.select.return_value.not_.is_.return_value.execute.return_value = MagicMock(data=[])
     response = c.get("/analytics/backtesting")
     assert response.status_code == 200
     data = response.json()
@@ -222,7 +222,7 @@ def test_backtesting_computes_hit_rate_correctly(client):
         {"direction": "bearish", "confidence": 0.65, "expected_move_low": 0.03,
          "expected_move_high": 0.07, "actual_move": -0.04, "was_correct": True},
     ]
-    mock_db.table.return_value.select.return_value.neq.return_value.execute.return_value = MagicMock(data=rows)
+    mock_db.table.return_value.select.return_value.not_.is_.return_value.execute.return_value = MagicMock(data=rows)
     response = c.get("/analytics/backtesting")
     assert response.status_code == 200
     data = response.json()
