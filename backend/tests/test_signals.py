@@ -75,3 +75,19 @@ def test_get_signal_returns_200_when_found(client):
     response = c.get("/signals/sig-uuid-1")
     assert response.status_code == 200
     assert response.json()["ticker"] == "NVDA"
+
+
+def test_list_signals_includes_price_at_signal(client):
+    c, mock_db = client
+    row = dict(MOCK_SIGNAL_ROW)
+    row["price_at_signal"] = 875.50
+    mock_exec = MagicMock()
+    mock_exec.data = [row]
+    mock_exec.count = 1
+    mock_db.table.return_value.select.return_value.order.return_value.range.return_value.execute.return_value = mock_exec
+    mock_db.table.return_value.select.return_value.execute.return_value = mock_exec
+
+    response = c.get("/signals")
+    assert response.status_code == 200
+    item = response.json()["data"][0]
+    assert item["price_at_signal"] == 875.50

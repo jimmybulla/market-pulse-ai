@@ -9,6 +9,7 @@ class SignalResponse(BaseModel):
     stock_name: str
     sector: Optional[str] = None
     last_price: Optional[float] = None
+    price_at_signal: Optional[float] = None
     direction: str
     confidence: float
     expected_move_low: float
