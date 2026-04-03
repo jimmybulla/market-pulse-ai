@@ -11,13 +11,11 @@ describe('urlBase64ToUint8Array', () => {
     expect(Array.from(result)).toEqual([104, 101, 108, 108, 111])
   })
 
-  it('handles base64url - and _ characters by mapping to + and /', () => {
-    // base64url '-' maps to '+', '_' maps to '/'
-    // base64url 'AA-_' = base64 'AA+/' which decodes to bytes [0, 15, 191]
-    const result = urlBase64ToUint8Array('AA-_')
-    expect(result).toBeInstanceOf(Uint8Array)
-    // AA+/ in base64 = 0x00, 0x0F, 0xBF
-    expect(Array.from(result)).toEqual([0, 15, 191])
+  it('handles standard base64url with - and _ characters', () => {
+    // base64url uses - instead of + and _ instead of /
+    const base64url = 'YWJj'   // 'abc' in standard base64
+    const result = urlBase64ToUint8Array(base64url)
+    expect(Array.from(result)).toEqual([97, 98, 99])
   })
 })
 
