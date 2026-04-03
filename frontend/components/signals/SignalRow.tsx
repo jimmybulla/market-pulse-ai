@@ -42,8 +42,8 @@ export default function SignalRow({ signal, isExpanded, onToggle }: SignalRowPro
       // crash_risk: treat a 10% drawdown as 100% progress toward crash threshold
       progressPct = Math.min((Math.abs(actualPct) / 10) * 100, 100)
     } else {
-      // bearish
-      const bearishDenom = Math.abs(expected_move_low) * 100
+      // bearish: use expected_move_high (larger magnitude target) as the full progress target
+      const bearishDenom = Math.abs(expected_move_high) * 100
       progressPct = bearishDenom !== 0 ? Math.min((Math.abs(actualPct) / bearishDenom) * 100, 100) : 0
     }
 
