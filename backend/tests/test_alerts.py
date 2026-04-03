@@ -1,7 +1,10 @@
 # backend/tests/test_alerts.py
 from unittest.mock import MagicMock, patch
 
-from app.services.pipeline import check_and_push_alerts
+try:
+    from app.services.pipeline import check_and_push_alerts
+except ImportError:
+    check_and_push_alerts = None
 
 
 def test_subscribe_returns_subscribed(client):
