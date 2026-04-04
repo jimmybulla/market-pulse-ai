@@ -1,19 +1,13 @@
 'use client'
 
 import Link from 'next/link'
-import { directionLabel } from '@/lib/signal-formatting'
+import { directionLabel, calcActualPct, calcProgressPct, calcDaysRemaining } from '@/lib/signal-formatting'
 import { Badge } from '@/components/ui/badge'
 import type { SignalResponse, SignalDirection } from '@/lib/types'
 
 function directionBadgeClass(direction: SignalDirection): string {
   if (direction === 'bullish') return 'bg-profit/10 text-profit border-profit/20'
   return 'bg-loss/10 text-loss border-loss/20'
-}
-
-function daysRemaining(createdAt: string, horizonDays: number): number {
-  const ageMs = Date.now() - new Date(createdAt).getTime()
-  const ageDays = ageMs / (1000 * 60 * 60 * 24)
-  return Math.round(horizonDays - ageDays)
 }
 
 interface Progress {
@@ -23,23 +17,20 @@ interface Progress {
 }
 
 function calcProgress(signal: SignalResponse): Progress {
-  const { last_price, price_at_signal, direction, expected_move_high } = signal
-  if (!last_price || !price_at_signal) {
+  const { last_price, price_at_signal, direction, expected_move_low, expected_move_high } = signal
+  const actualPct = calcActualPct(last_price, price_at_signal)
+  if (actualPct === null) {
     return { pct: 0, barClass: 'bg-surface-elevated', actualPct: null }
   }
 
-  const actualPct = ((last_price - price_at_signal) / price_at_signal) * 100
+  const pct = calcProgressPct(direction, actualPct, expected_move_low, expected_move_high)
 
-  if (direction === 'bullish' || direction === 'bearish') {
-    const targetPct = expected_move_high * 100
-    const pct = Math.min(100, Math.max(0, (actualPct / targetPct) * 100))
-    const barClass = actualPct >= 0 ? 'bg-profit' : 'bg-loss'
+  if (direction === 'crash_risk') {
+    const barClass = actualPct <= 0 ? 'bg-loss' : 'bg-profit'
     return { pct, barClass, actualPct }
   }
 
-  // crash_risk: track downward move, 10% drop = 100%
-  const pct = Math.min(100, Math.max(0, (Math.abs(actualPct) / 10) * 100))
-  const barClass = actualPct <= 0 ? 'bg-loss' : 'bg-profit'
+  const barClass = actualPct >= 0 ? 'bg-profit' : 'bg-loss'
   return { pct, barClass, actualPct }
 }
 
@@ -55,7 +46,7 @@ export default function SignalTrackerRow({ signal }: Props) {
   } = signal
 
   const progress = calcProgress(signal)
-  const daysLeft = daysRemaining(created_at, horizon_days)
+  const daysLeft = calcDaysRemaining(created_at, horizon_days)
   const expired = daysLeft <= 0
 
   return (

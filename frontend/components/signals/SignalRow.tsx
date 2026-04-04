@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { ChevronRight, ChevronDown } from 'lucide-react'
-import { directionLabel, directionColor } from '@/lib/signal-formatting'
+import { directionLabel, directionColor, calcActualPct, calcProgressPct, calcDaysRemaining } from '@/lib/signal-formatting'
 import type { SignalResponse } from '@/lib/types'
 
 interface SignalRowProps {
@@ -17,30 +17,13 @@ export default function SignalRow({ signal, isExpanded, onToggle }: SignalRowPro
     historical_analog, risk_flags,
   } = signal
 
-  // Calculate progress bar metrics
-  const hasPrice = price_at_signal !== null && last_price !== null
-  let actualPct = 0
-  let progressPct = 0
-  let daysRemaining = 0
-
-  if (hasPrice) {
-    actualPct = ((last_price - price_at_signal) / price_at_signal) * 100
-
-    if (direction === 'bullish') {
-      const bullishDenom = expected_move_high * 100
-      progressPct = bullishDenom !== 0 ? Math.min((actualPct / bullishDenom) * 100, 100) : 0
-    } else if (direction === 'crash_risk') {
-      // crash_risk: treat a 10% drawdown as 100% progress toward crash threshold
-      progressPct = Math.min((Math.abs(actualPct) / 10) * 100, 100)
-    } else {
-      // bearish: use expected_move_high (larger magnitude target) as the full progress target
-      const bearishDenom = Math.abs(expected_move_high) * 100
-      progressPct = bearishDenom !== 0 ? Math.min((Math.abs(actualPct) / bearishDenom) * 100, 100) : 0
-    }
-
-    const elapsedDays = (Date.now() - new Date(created_at).getTime()) / 86400000
-    daysRemaining = Math.round(horizon_days - elapsedDays)
-  }
+  const actualPctRaw = calcActualPct(last_price, price_at_signal)
+  const hasPrice = actualPctRaw !== null
+  const actualPct = actualPctRaw ?? 0
+  const progressPct = hasPrice
+    ? calcProgressPct(direction, actualPct, expected_move_low, expected_move_high)
+    : 0
+  const daysRemaining = hasPrice ? calcDaysRemaining(created_at, horizon_days) : 0
 
   return (
     <div className="bg-surface-card rounded-xl border border-white/8 overflow-hidden">
