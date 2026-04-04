@@ -1,8 +1,6 @@
-export async function GET(request: Request) {
+import { proxyGet } from '@/lib/proxy'
+
+export async function GET(request: Request): Promise<Response> {
   const { searchParams } = new URL(request.url)
-  const res = await fetch(
-    `${process.env.BACKEND_URL}/signals?${searchParams}`,
-    { cache: 'no-store' }
-  )
-  return Response.json(await res.json(), { status: res.status })
+  return proxyGet(`/signals?${searchParams}`, { cache: 'no-store' })
 }

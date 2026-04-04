@@ -1,11 +1,9 @@
+import { proxyGet } from '@/lib/proxy'
+
 export async function GET(
   _request: Request,
   { params }: { params: Promise<{ id: string }> }
-) {
+): Promise<Response> {
   const { id } = await params
-  const res = await fetch(
-    `${process.env.BACKEND_URL}/signals/${id}`,
-    { cache: 'no-store' }
-  )
-  return Response.json(await res.json(), { status: res.status })
+  return proxyGet(`/signals/${id}`, { cache: 'no-store' })
 }
