@@ -1,14 +1,6 @@
 'use client'
+import { sourceDomain, sentimentColor, sentimentLabel } from '@/lib/signal-formatting'
 import type { NewsArticleResponse } from '@/lib/types'
-
-function sourceDomain(url: string | null): string {
-  if (!url) return ''
-  try {
-    return new URL(url).hostname.replace('www.', '')
-  } catch {
-    return ''
-  }
-}
 
 export default function ArticleList({ articles }: { articles: NewsArticleResponse[] }) {
   if (articles.length === 0) {
@@ -20,14 +12,6 @@ export default function ArticleList({ articles }: { articles: NewsArticleRespons
   return (
     <div className="divide-y divide-white/4">
       {articles.map((article) => {
-        const sentimentClass =
-          article.sentiment_score === null
-            ? 'text-gray-500'
-            : article.sentiment_score >= 0
-            ? 'text-profit'
-            : 'text-loss'
-        const sentimentSign =
-          article.sentiment_score !== null && article.sentiment_score >= 0 ? '+' : ''
         const domain = sourceDomain(article.url)
 
         return (
@@ -47,8 +31,8 @@ export default function ArticleList({ articles }: { articles: NewsArticleRespons
             <div className="flex items-center gap-3 flex-wrap text-xs text-gray-500">
               <span>{article.published_at ? article.published_at.slice(0, 10) : '—'}</span>
               {article.sentiment_score !== null && (
-                <span className={sentimentClass}>
-                  {sentimentSign}{article.sentiment_score.toFixed(2)}
+                <span className={sentimentColor(article.sentiment_score)}>
+                  {sentimentLabel(article.sentiment_score)}
                 </span>
               )}
               {article.event_type && (

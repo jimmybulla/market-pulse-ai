@@ -1,22 +1,7 @@
-import { directionLabel } from '@/lib/signal-formatting'
+import { directionLabel, sourceDomain, sentimentColor, sentimentLabel } from '@/lib/signal-formatting'
 import type { NewsFeedItem } from '@/lib/types'
 
-function sourceDomain(url: string) {
-  try {
-    return new URL(url).hostname.replace('www.', '')
-  } catch {
-    return url
-  }
-}
-
 export default function NewsCard({ item }: { item: NewsFeedItem }) {
-  const sentimentSign = item.sentiment_score !== null && item.sentiment_score >= 0 ? '+' : ''
-  const sentimentClass =
-    item.sentiment_score === null
-      ? 'text-gray-500'
-      : item.sentiment_score >= 0
-      ? 'text-profit'
-      : 'text-loss'
 
   return (
     <div className="bg-surface-card rounded-xl border border-white/8 p-4 space-y-3">
@@ -61,8 +46,8 @@ export default function NewsCard({ item }: { item: NewsFeedItem }) {
           </span>
         )}
         {item.sentiment_score !== null && (
-          <span className={sentimentClass}>
-            {sentimentSign}{item.sentiment_score.toFixed(2)}
+          <span className={sentimentColor(item.sentiment_score)}>
+            {sentimentLabel(item.sentiment_score)}
           </span>
         )}
         <span>{item.published_at ? item.published_at.slice(0, 10) : '—'}</span>

@@ -32,3 +32,20 @@ export function calcDaysRemaining(createdAt: string, horizonDays: number): numbe
   const ageDays = (Date.now() - new Date(createdAt).getTime()) / 86400000
   return Math.round(horizonDays - ageDays)
 }
+
+export function sourceDomain(url: string | null): string {
+  if (!url) return ''
+  try { return new URL(url).hostname.replace('www.', '') }
+  catch { return '' }
+}
+
+export function sentimentColor(score: number | null): string {
+  if (score == null) return 'text-gray-500'
+  return score >= 0 ? 'text-profit' : 'text-loss'
+}
+
+export function sentimentLabel(score: number | null): string {
+  if (score == null) return '--'
+  const prefix = score >= 0 ? '+' : ''
+  return `${prefix}${score.toFixed(2)}`
+}
