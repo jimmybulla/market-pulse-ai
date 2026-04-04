@@ -1,16 +1,7 @@
 import Link from 'next/link'
 import { ChevronRight, ChevronDown } from 'lucide-react'
-import type { SignalResponse, SignalDirection } from '@/lib/types'
-
-function directionLabel(d: SignalDirection) {
-  if (d === 'bullish') return '↑ Bullish'
-  if (d === 'bearish') return '↓ Bearish'
-  return '⚠ Crash Risk'
-}
-
-function directionColor(d: SignalDirection) {
-  return d === 'bullish' ? 'text-profit' : 'text-loss'
-}
+import { directionLabel, directionColor } from '@/lib/signal-formatting'
+import type { SignalResponse } from '@/lib/types'
 
 interface SignalRowProps {
   signal: SignalResponse

@@ -1,14 +1,9 @@
 'use client'
 
 import Link from 'next/link'
+import { directionLabel } from '@/lib/signal-formatting'
 import { Badge } from '@/components/ui/badge'
 import type { SignalResponse, SignalDirection } from '@/lib/types'
-
-function directionLabel(direction: SignalDirection): string {
-  if (direction === 'bullish') return '↑ Bullish'
-  if (direction === 'bearish') return '↓ Bearish'
-  return '⚠ Crash Risk'
-}
 
 function directionBadgeClass(direction: SignalDirection): string {
   if (direction === 'bullish') return 'bg-profit/10 text-profit border-profit/20'

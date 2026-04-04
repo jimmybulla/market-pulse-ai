@@ -1,10 +1,5 @@
+import { directionLabel } from '@/lib/signal-formatting'
 import type { NewsFeedItem } from '@/lib/types'
-
-function directionLabel(d: string) {
-  if (d === 'bullish') return '↑ Bullish'
-  if (d === 'bearish') return '↓ Bearish'
-  return '⚠ Crash Risk'
-}
 
 function sourceDomain(url: string) {
   try {

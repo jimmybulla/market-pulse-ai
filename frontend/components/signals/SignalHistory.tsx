@@ -1,5 +1,6 @@
 'use client'
 import { useEffect, useState } from 'react'
+import { directionLabel } from '@/lib/signal-formatting'
 import type { SignalHistoryEntry } from '@/lib/types'
 
 export default function SignalHistory({ ticker }: { ticker: string }) {
@@ -17,12 +18,6 @@ export default function SignalHistory({ ticker }: { ticker: string }) {
   }, [ticker])
 
   if (!loaded) return null
-
-  function directionLabel(d: string) {
-    if (d === 'bullish') return '↑ Bullish'
-    if (d === 'bearish') return '↓ Bearish'
-    return '⚠ Crash Risk'
-  }
 
   function correctCell(entry: SignalHistoryEntry) {
     if (entry.was_correct === null) return <span className="text-gray-600">Pending</span>

@@ -7,6 +7,7 @@ import SignalExpanded from '@/components/signals/SignalExpanded'
 import SignalHistory from '@/components/signals/SignalHistory'
 import ArticleList from '@/components/news/ArticleList'
 import TopBar from '@/components/layout/TopBar'
+import { directionLabel } from '@/lib/signal-formatting'
 import type { SignalDirection } from '@/lib/types'
 import { ArrowLeft } from 'lucide-react'
 
@@ -14,12 +15,6 @@ function bannerStyle(direction: SignalDirection | undefined): string {
   if (direction === 'bullish') return 'border border-profit/20 bg-profit/5'
   if (direction === 'bearish' || direction === 'crash_risk') return 'border border-loss/20 bg-loss/5'
   return 'border border-white/8 bg-surface-elevated'
-}
-
-function directionLabel(direction: SignalDirection): string {
-  if (direction === 'bullish') return '↑ Bullish'
-  if (direction === 'bearish') return '↓ Bearish'
-  return '⚠ Crash Risk'
 }
 
 function directionBadgeColor(direction: SignalDirection): string {

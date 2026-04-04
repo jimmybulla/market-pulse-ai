@@ -3,15 +3,10 @@
 import Link from 'next/link'
 import { Progress } from '@/components/ui/progress'
 import { Badge } from '@/components/ui/badge'
+import { directionLabel } from '@/lib/signal-formatting'
 import type { SignalResponse, SignalDirection } from '@/lib/types'
 
-function directionLabel(direction: SignalDirection): string {
-  if (direction === 'bullish') return '↑ Bullish'
-  if (direction === 'bearish') return '↓ Bearish'
-  return '⚠ Crash Risk'
-}
-
-function directionColor(direction: SignalDirection): string {
+function directionBadgeColor(direction: SignalDirection): string {
   if (direction === 'bullish') return 'bg-profit/10 text-profit border-profit/20'
   return 'bg-loss/10 text-loss border-loss/20'
 }
@@ -41,7 +36,7 @@ export default function SignalCard({ signal }: SignalCardProps) {
             <p className="font-mono font-bold text-lg text-white leading-tight">{ticker}</p>
             <p className="text-xs text-gray-400 truncate max-w-[140px]">{stock_name}</p>
           </div>
-          <Badge className={`text-xs ${directionColor(direction)}`}>
+          <Badge className={`text-xs ${directionBadgeColor(direction)}`}>
             {directionLabel(direction)}
           </Badge>
         </div>
