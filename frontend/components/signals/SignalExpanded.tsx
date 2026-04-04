@@ -8,10 +8,23 @@ interface SignalExpandedProps {
 }
 
 export default function SignalExpanded({ signal }: SignalExpandedProps) {
-  const { drivers, risk_flags, evidence, historical_analog } = signal
+  const { drivers, risk_flags, evidence, historical_analog, explanation } = signal
 
   return (
     <div className="space-y-5">
+      {/* Explanation */}
+      {explanation && (
+        <>
+          <div>
+            <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
+              Analysis
+            </h3>
+            <p className="text-sm text-gray-300 leading-relaxed">{explanation}</p>
+          </div>
+          <Separator className="bg-white/8" />
+        </>
+      )}
+
       {/* Key Drivers */}
       <div>
         <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">

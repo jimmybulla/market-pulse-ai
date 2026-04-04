@@ -4,7 +4,7 @@
 
 **Goal:** Add a `/stocks` page showing all tracked stocks in a searchable, filterable, sortable table where each ticker links to `/stock/[ticker]`.
 
-**Architecture:** The server fetches all stocks once with `getStocks({ limit: 200 })` and passes the full array to a `'use client'` `StocksTable` component. Search (ticker/name), sector filter, and column sort are all applied client-side in JS with no additional network requests — identical to the `SignalList` and `NewsFeed` patterns already in the codebase.
+**Architecture:** The server fetches all stocks once with `getStocks({ limit: 100 })` and passes the full array to a `'use client'` `StocksTable` component. Search (ticker/name), sector filter, and column sort are all applied client-side in JS with no additional network requests — identical to the `SignalList` and `NewsFeed` patterns already in the codebase.
 
 **Tech Stack:** Next.js 16 App Router, React, TypeScript, Tailwind CSS, Jest + @testing-library/react
 
@@ -299,7 +299,7 @@ import StocksTable from '@/components/stocks/StocksTable'
 import TopBar from '@/components/layout/TopBar'
 
 export default async function StocksPage() {
-  const { data } = await getStocks({ limit: 200 })
+  const { data } = await getStocks({ limit: 100 })
   return (
     <div>
       <TopBar title="Stocks" subtitle="All tracked stocks" />

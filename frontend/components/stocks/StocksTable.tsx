@@ -51,13 +51,13 @@ export default function StocksTable({ stocks }: { stocks: StockResponse[] }) {
   return (
     <div className="space-y-4">
       {/* Filter bar */}
-      <div className="flex gap-3">
+      <div className="flex gap-3 flex-wrap">
         <input
           aria-label="Search"
           placeholder="Search ticker or name..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="bg-surface-card border border-white/8 rounded-lg px-3 py-2 text-sm text-gray-300 focus:outline-none focus:border-white/20 w-64"
+          className="bg-surface-card border border-white/8 rounded-lg px-3 py-2 text-sm text-gray-300 focus:outline-none focus:border-white/20 w-full sm:w-64"
         />
         <select
           aria-label="Sector"
@@ -87,13 +87,13 @@ export default function StocksTable({ stocks }: { stocks: StockResponse[] }) {
                   Ticker{indicator('ticker')}
                 </th>
                 <th
-                  className="pb-3 pr-6 cursor-pointer hover:text-gray-300 font-medium"
+                  className="pb-3 pr-6 cursor-pointer hover:text-gray-300 font-medium hidden sm:table-cell"
                   onClick={() => handleSort('name')}
                 >
                   Name{indicator('name')}
                 </th>
                 <th
-                  className="pb-3 pr-6 cursor-pointer hover:text-gray-300 font-medium"
+                  className="pb-3 pr-6 cursor-pointer hover:text-gray-300 font-medium hidden md:table-cell"
                   onClick={() => handleSort('sector')}
                 >
                   Sector{indicator('sector')}
@@ -117,8 +117,8 @@ export default function StocksTable({ stocks }: { stocks: StockResponse[] }) {
                       {stock.ticker}
                     </Link>
                   </td>
-                  <td className="py-3 pr-6 text-gray-300">{stock.name}</td>
-                  <td className="py-3 pr-6 text-gray-400">{stock.sector ?? '—'}</td>
+                  <td className="py-3 pr-6 text-gray-300 hidden sm:table-cell">{stock.name}</td>
+                  <td className="py-3 pr-6 text-gray-400 hidden md:table-cell">{stock.sector ?? '—'}</td>
                   <td className="py-3 text-gray-300">
                     {stock.last_price !== null ? `$${stock.last_price.toFixed(2)}` : '—'}
                   </td>

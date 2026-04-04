@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import Image from 'next/image'
 import { usePathname } from 'next/navigation'
 import { BarChart3, TrendingUp, Newspaper, LayoutDashboard, FlaskConical } from 'lucide-react'
 
@@ -18,18 +19,23 @@ export default function Sidebar() {
   return (
     <aside className="flex flex-col w-16 lg:w-56 h-screen bg-surface-card border-r border-white/8 fixed left-0 top-0 z-50">
       {/* Logo */}
-      <div className="flex items-center gap-3 px-4 py-5 border-b border-white/8">
-        <div className="w-8 h-8 rounded-lg flex-shrink-0"
-          style={{ background: 'linear-gradient(135deg, #0A2540 0%, #1A6BCC 50%, #00D4FF 100%)' }}
+      <div className="flex items-center justify-center lg:justify-start bg-gray-300 border-b border-white/8 h-14 px-3">
+        <Image
+          src="/images/marketpulseai_logo.png"
+          alt="MarketPulse AI"
+          width={130}
+          height={34}
+          className="hidden lg:block object-contain"
+          priority
         />
-        <span className="hidden lg:block font-bold text-sm text-white">
-          Market Pulse{' '}
-          <span style={{
-            background: 'linear-gradient(90deg, #1A6BCC, #00D4FF)',
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent',
-          }}>AI</span>
-        </span>
+        <Image
+          src="/images/marketpulseai_logo.png"
+          alt="MarketPulse AI"
+          width={28}
+          height={28}
+          className="block lg:hidden object-contain"
+          priority
+        />
       </div>
 
       {/* Nav */}

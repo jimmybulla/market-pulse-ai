@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { FlaskConical } from 'lucide-react'
 import {
   ComposedChart, Bar, Line,
   XAxis, YAxis, CartesianGrid, Tooltip,
@@ -88,8 +89,14 @@ export default function BacktestingDashboard({ stats, performanceData }: Props) 
 
   if (stats.total_resolved === 0 && performanceData.weekly.length === 0) {
     return (
-      <div className="py-16 text-center text-sm text-gray-600">
-        No resolved signals yet — check back after signals have been live for 5+ days
+      <div className="flex flex-col items-center justify-center py-24 gap-4">
+        <div className="w-12 h-12 rounded-full bg-surface-card border border-white/8 flex items-center justify-center">
+          <FlaskConical className="w-5 h-5 text-gray-500" />
+        </div>
+        <p className="text-sm font-medium text-gray-400">No resolved signals yet</p>
+        <p className="text-xs text-gray-600 text-center max-w-xs">
+          Backtesting data populates automatically once signals expire their horizon window (typically 5–30 days after generation).
+        </p>
       </div>
     )
   }

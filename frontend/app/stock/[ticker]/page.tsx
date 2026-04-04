@@ -83,7 +83,7 @@ export default async function StockPage({
               <div className="flex items-center gap-1 text-sm">
                 <span className="text-gray-500">Expected</span>
                 <span className="font-mono text-white ml-1">
-                  +{(signal.expected_move_low * 100).toFixed(1)}% to +{(signal.expected_move_high * 100).toFixed(1)}%
+                  {(signal.expected_move_low * 100).toFixed(1)}% to {(signal.expected_move_high * 100).toFixed(1)}%
                 </span>
               </div>
               <div className="flex items-center gap-1 text-sm">
