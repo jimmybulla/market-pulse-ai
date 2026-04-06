@@ -19,7 +19,7 @@ export default function NewsCard({ item }: { item: NewsFeedItem }) {
           <span
             className={`text-xs font-medium ${item.signal_direction === 'bullish' ? 'text-profit' : 'text-loss'}`}
           >
-            {directionLabel(item.signal_direction)} · {Math.round(item.signal_confidence * 100)}%
+            {directionLabel(item.signal_direction as import('@/lib/types').SignalDirection)} · {Math.round(item.signal_confidence * 100)}%
           </span>
         )}
       </div>
