@@ -78,7 +78,7 @@ export default function NewsVolumeChart({ ticker, range }: Props) {
             }}
             labelStyle={{ color: '#9CA3AF', fontSize: 11 }}
             itemStyle={{ color: '#00B4FF', fontSize: 11 }}
-            formatter={(v: number) => [v, 'Articles']}
+            formatter={(v) => [v ?? 0, 'Articles']}
           />
           <Bar dataKey="count" fill="#00B4FF" radius={[2, 2, 0, 0]} />
         </BarChart>
