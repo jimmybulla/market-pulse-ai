@@ -7,7 +7,8 @@ import type {
   NewsFeedItem, PerformanceData,
 } from './types'
 
-const BACKEND = process.env.BACKEND_URL || 'http://localhost:8000'
+const rawBackend = process.env.BACKEND_URL || 'http://localhost:8000'
+const BACKEND = rawBackend.startsWith('http') ? rawBackend : `https://${rawBackend}`
 
 export interface SignalParams {
   direction?: SignalDirection
