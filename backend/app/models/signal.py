@@ -5,7 +5,7 @@ from datetime import datetime
 
 class SignalResponse(BaseModel):
     id: str
-    stock_id: str
+    stock_id: Optional[str] = None
     ticker: str
     stock_name: str
     sector: Optional[str] = None
