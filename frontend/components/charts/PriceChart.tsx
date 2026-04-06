@@ -81,7 +81,7 @@ export default function PriceChart({ ticker, range }: Props) {
             }}
             labelStyle={{ color: '#9CA3AF', fontSize: 11 }}
             itemStyle={{ color: '#00B4FF', fontSize: 11 }}
-            formatter={(v: number) => [`$${v.toFixed(2)}`, 'Close']}
+            formatter={(v) => [`$${Number(v ?? 0).toFixed(2)}`, 'Close']}
           />
           <Area
             type="monotone"
