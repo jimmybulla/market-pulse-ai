@@ -22,14 +22,21 @@ MOCK_SIGNAL_ROW = {
     "stocks": {"ticker": "NVDA", "name": "NVIDIA Corporation", "sector": "Technology", "last_price": 875.50},
 }
 
+# An active (non-expired) signal row for tests that need is_expired=False
+MOCK_SIGNAL_ROW_ACTIVE = {
+    **MOCK_SIGNAL_ROW,
+    "id": "sig-uuid-2",
+    "expires_at": "2099-12-31T00:00:00+00:00",  # far future
+}
+
 
 def test_list_signals_returns_200(client):
     c, mock_db = client
     mock_exec = MagicMock()
-    mock_exec.data = [dict(MOCK_SIGNAL_ROW)]
+    mock_exec.data = [dict(MOCK_SIGNAL_ROW_ACTIVE)]
     mock_exec.count = 1
-    mock_db.table.return_value.select.return_value.order.return_value.range.return_value.execute.return_value = mock_exec
-    mock_db.table.return_value.select.return_value.execute.return_value = mock_exec
+    mock_db.table.return_value.select.return_value.order.return_value.gte.return_value.range.return_value.execute.return_value = mock_exec
+    mock_db.table.return_value.select.return_value.gte.return_value.execute.return_value = mock_exec
 
     response = c.get("/signals")
     assert response.status_code == 200
@@ -42,10 +49,10 @@ def test_list_signals_returns_200(client):
 def test_list_signals_enriches_stock_fields(client):
     c, mock_db = client
     mock_exec = MagicMock()
-    mock_exec.data = [dict(MOCK_SIGNAL_ROW)]
+    mock_exec.data = [dict(MOCK_SIGNAL_ROW_ACTIVE)]
     mock_exec.count = 1
-    mock_db.table.return_value.select.return_value.order.return_value.range.return_value.execute.return_value = mock_exec
-    mock_db.table.return_value.select.return_value.execute.return_value = mock_exec
+    mock_db.table.return_value.select.return_value.order.return_value.gte.return_value.range.return_value.execute.return_value = mock_exec
+    mock_db.table.return_value.select.return_value.gte.return_value.execute.return_value = mock_exec
 
     response = c.get("/signals")
     assert response.status_code == 200
@@ -79,15 +86,68 @@ def test_get_signal_returns_200_when_found(client):
 
 def test_list_signals_includes_price_at_signal(client):
     c, mock_db = client
-    row = dict(MOCK_SIGNAL_ROW)
+    row = dict(MOCK_SIGNAL_ROW_ACTIVE)
     row["price_at_signal"] = 875.50
     mock_exec = MagicMock()
     mock_exec.data = [row]
     mock_exec.count = 1
-    mock_db.table.return_value.select.return_value.order.return_value.range.return_value.execute.return_value = mock_exec
-    mock_db.table.return_value.select.return_value.execute.return_value = mock_exec
+    mock_db.table.return_value.select.return_value.order.return_value.gte.return_value.range.return_value.execute.return_value = mock_exec
+    mock_db.table.return_value.select.return_value.gte.return_value.execute.return_value = mock_exec
 
     response = c.get("/signals")
     assert response.status_code == 200
     item = response.json()["data"][0]
     assert item["price_at_signal"] == 875.50
+
+
+def test_get_signal_sets_is_expired_true_when_past_expires_at(client):
+    c, mock_db = client
+    row = dict(MOCK_SIGNAL_ROW)  # expires_at "2026-04-01" is in the past
+    mock_exec = MagicMock()
+    mock_exec.data = row
+    mock_db.table.return_value.select.return_value.eq.return_value.maybe_single.return_value.execute.return_value = mock_exec
+
+    response = c.get("/signals/sig-uuid-1")
+    assert response.status_code == 200
+    assert response.json()["is_expired"] is True
+
+
+def test_get_signal_sets_is_expired_false_when_future_expires_at(client):
+    c, mock_db = client
+    row = dict(MOCK_SIGNAL_ROW_ACTIVE)
+    mock_exec = MagicMock()
+    mock_exec.data = row
+    mock_db.table.return_value.select.return_value.eq.return_value.maybe_single.return_value.execute.return_value = mock_exec
+
+    response = c.get("/signals/sig-uuid-2")
+    assert response.status_code == 200
+    assert response.json()["is_expired"] is False
+
+
+def test_list_signals_excludes_expired_signals(client):
+    """list_signals must apply .gte("expires_at", now) filter — verified by mock chain."""
+    c, mock_db = client
+    mock_exec = MagicMock()
+    mock_exec.data = [dict(MOCK_SIGNAL_ROW_ACTIVE)]
+    mock_exec.count = 1
+    # New chain after .gte() is added: select -> order -> gte -> range -> execute
+    mock_db.table.return_value.select.return_value.order.return_value.gte.return_value.range.return_value.execute.return_value = mock_exec
+    # Count chain: select -> gte -> execute
+    mock_db.table.return_value.select.return_value.gte.return_value.execute.return_value = mock_exec
+
+    response = c.get("/signals")
+    assert response.status_code == 200
+    assert len(response.json()["data"]) == 1
+
+
+def test_list_signals_is_expired_false_for_active_signal(client):
+    c, mock_db = client
+    mock_exec = MagicMock()
+    mock_exec.data = [dict(MOCK_SIGNAL_ROW_ACTIVE)]
+    mock_exec.count = 1
+    mock_db.table.return_value.select.return_value.order.return_value.gte.return_value.range.return_value.execute.return_value = mock_exec
+    mock_db.table.return_value.select.return_value.gte.return_value.execute.return_value = mock_exec
+
+    response = c.get("/signals")
+    assert response.status_code == 200
+    assert response.json()["data"][0]["is_expired"] is False

@@ -26,6 +26,7 @@ class SignalResponse(BaseModel):
     risk_flags: list[str] = []
     created_at: datetime
     expires_at: Optional[datetime] = None
+    is_expired: bool = False
 
 
 class PaginatedSignals(BaseModel):

@@ -1,4 +1,5 @@
 # backend/app/routers/signals.py
+from datetime import datetime, timezone
 from typing import Optional
 from fastapi import APIRouter, Query, HTTPException, Depends
 from supabase import Client
@@ -15,6 +16,12 @@ def _enrich(row: dict) -> dict:
     row["stock_name"] = stock.get("name", "")
     row["sector"] = stock.get("sector")
     row["last_price"] = stock.get("last_price")
+    expires_at_raw = row.get("expires_at")
+    if expires_at_raw:
+        expires_dt = datetime.fromisoformat(str(expires_at_raw).replace("Z", "+00:00"))
+        row["is_expired"] = expires_dt < datetime.now(timezone.utc)
+    else:
+        row["is_expired"] = False
     return row
 
 
@@ -26,11 +33,12 @@ def list_signals(
     offset: int = Query(0, ge=0),
     db: Client = Depends(get_db),
 ):
+    now_iso = datetime.now(timezone.utc).isoformat()
     query = db.table("signals").select(
         "*, stocks(ticker, name, sector, last_price)"
-    ).order("rank")
+    ).order("rank").gte("expires_at", now_iso)
 
-    count_query = db.table("signals").select("id", count="exact")
+    count_query = db.table("signals").select("id", count="exact").gte("expires_at", now_iso)
 
     if direction:
         query = query.eq("direction", direction)
