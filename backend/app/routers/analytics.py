@@ -123,6 +123,16 @@ class PerformanceBucket(BaseModel):
     total: int
 
 
+# ── /sector-heatmap ───────────────────────────────────────────────────
+
+class SectorHeatmapEntry(BaseModel):
+    sector: str
+    signal_count: int
+    bullish: int
+    bearish: int
+    crash_risk: int
+
+
 PeriodParam = Literal["weekly", "monthly"]
 
 
@@ -163,7 +173,7 @@ def get_performance_over_time(
 
 # ── /sector-heatmap ───────────────────────────────────────────────────
 
-@router.get("/sector-heatmap")
+@router.get("/sector-heatmap", response_model=list[SectorHeatmapEntry])
 def get_sector_heatmap(db: Client = Depends(get_db)):
     from datetime import timezone
     now_iso = datetime.now(timezone.utc).isoformat()
