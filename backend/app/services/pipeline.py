@@ -217,6 +217,34 @@ def update_prices(db: Client) -> None:
     logger.info("[pipeline] Prices: %d updated", count)
 
 
+def update_price_history(db: Client) -> None:
+    """Fetch and store 90-day price history for all stocks in Supabase."""
+    stocks = db.table("stocks").select("id, ticker").execute().data or []
+    count = 0
+
+    for stock in stocks:
+        try:
+            hist = yf.Ticker(stock["ticker"]).history(period="90d")
+            if hist.empty:
+                continue
+            data = [
+                {"date": str(idx.date()), "close": round(float(row["Close"]), 2)}
+                for idx, row in hist.iterrows()
+            ]
+            db.table("stocks").update(
+                {"price_history_90d": data}
+            ).eq("id", stock["id"]).execute()
+            count += 1
+        except Exception as exc:
+            logger.error(
+                "[pipeline] ERROR: price history update failed for %s — %s",
+                stock.get("ticker"),
+                exc,
+            )
+
+    logger.info("[pipeline] Price history: %d stocks updated", count)
+
+
 def _record_signal_history(
     db: Client,
     stock_id: str,
@@ -445,6 +473,12 @@ def run_pipeline(db: Client) -> None:
 
     # Step 4: Update prices
     update_prices(db)
+
+    # Step 4b: Store price history in Supabase (bypasses yfinance rate limits on chart requests)
+    try:
+        update_price_history(db)
+    except Exception as exc:
+        logger.error("[pipeline] Price history step failed: %s", exc)
 
     # Step 5: Resolve signal outcomes
     try:

@@ -2,11 +2,13 @@
 from datetime import datetime, timezone, timedelta
 from unittest.mock import MagicMock, patch, call
 import pytest
+import pandas as pd
 
 from app.services.pipeline import (
     _compute_historical_analog,
     extract_features_for_articles,
     generate_signals,
+    update_price_history,
     update_prices,
     run_pipeline,
 )
@@ -242,3 +244,49 @@ def test_compute_historical_analog_uses_abs_actual_move():
     result = _compute_historical_analog(db, "stock-1", "bearish")
     assert result["avg_move"] == pytest.approx(0.06, abs=0.001)
     assert result["avg_move"] > 0
+
+
+# --- update_price_history ---
+
+def test_update_price_history_stores_data():
+    db = MagicMock()
+    db.table.return_value.select.return_value.execute.return_value.data = [
+        {"id": "stock-1", "ticker": "AAPL"}
+    ]
+    mock_hist = pd.DataFrame(
+        {"Close": [210.0, 215.0, 220.0]},
+        index=pd.DatetimeIndex(["2026-04-01", "2026-04-02", "2026-04-03"]),
+    )
+    with patch("app.services.pipeline.yf.Ticker") as mock_ticker:
+        mock_ticker.return_value.history.return_value = mock_hist
+        update_price_history(db)
+
+    update_call = db.table.return_value.update.call_args
+    stored = update_call[0][0]["price_history_90d"]
+    assert len(stored) == 3
+    assert stored[0] == {"date": "2026-04-01", "close": 210.0}
+    assert stored[2] == {"date": "2026-04-03", "close": 220.0}
+
+
+def test_update_price_history_skips_empty_history():
+    db = MagicMock()
+    db.table.return_value.select.return_value.execute.return_value.data = [
+        {"id": "stock-1", "ticker": "FAKE"}
+    ]
+    with patch("app.services.pipeline.yf.Ticker") as mock_ticker:
+        mock_ticker.return_value.history.return_value = pd.DataFrame()
+        update_price_history(db)
+
+    db.table.return_value.update.assert_not_called()
+
+
+def test_update_price_history_skips_on_exception():
+    db = MagicMock()
+    db.table.return_value.select.return_value.execute.return_value.data = [
+        {"id": "stock-1", "ticker": "AAPL"}
+    ]
+    with patch("app.services.pipeline.yf.Ticker") as mock_ticker:
+        mock_ticker.return_value.history.side_effect = Exception("rate limited")
+        update_price_history(db)
+
+    db.table.return_value.update.assert_not_called()
