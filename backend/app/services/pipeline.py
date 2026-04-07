@@ -8,8 +8,10 @@ from typing import Optional
 import yfinance as yf
 from supabase import Client
 
+from app.services.explainer import generate_explanation
 from app.services.features import extract_features
 from app.services.ingestor import ingest_news
+from app.services.momentum import get_momentum
 from app.services.newsapi_ingestor import ingest_newsapi
 from app.services.push import send_push_notification
 from app.services.scoring import ArticleFeatures, score_articles
@@ -56,7 +58,7 @@ def generate_signals(db: Client) -> None:
         try:
             rows = (
                 db.table("news_articles")
-                .select("id, sentiment_score, credibility_score, novelty_score, severity, event_type, url")
+                .select("id, headline, sentiment_score, credibility_score, novelty_score, severity, event_type, url")
                 .gte("published_at", cutoff)
                 .filter("tickers", "cs", f'{{{stock["ticker"]}}}')  # PostgreSQL array @> (contains)
                 .execute()
@@ -75,7 +77,8 @@ def generate_signals(db: Client) -> None:
                 for r in rows
             ]
 
-            result = score_articles(features)
+            momentum = get_momentum(stock["ticker"])
+            result = score_articles(features, momentum=momentum)
             if result is None:
                 unchanged += 1
                 continue
@@ -117,11 +120,29 @@ def generate_signals(db: Client) -> None:
 
             existing = (
                 db.table("signals")
-                .select("id")
+                .select("id, direction, confidence")
                 .eq("stock_id", stock["id"])
                 .execute()
                 .data or []
             )
+
+            signal_changed = (
+                not existing
+                or existing[0]["direction"] != result.direction
+                or abs(existing[0]["confidence"] - result.confidence) >= 0.05
+            )
+
+            if signal_changed:
+                headlines = [r["headline"] for r in rows if r.get("headline")][:5]
+                explanation = generate_explanation(
+                    ticker=stock["ticker"],
+                    direction=result.direction,
+                    confidence=result.confidence,
+                    drivers=result.drivers,
+                    headlines=headlines,
+                )
+                if explanation:
+                    signal_data["explanation"] = explanation
 
             if existing:
                 db.table("signals").update(signal_data).eq("stock_id", stock["id"]).execute()

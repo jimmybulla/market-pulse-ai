@@ -16,6 +16,7 @@ class Settings(BaseSettings):
     # Required in production: set VAPID_CONTACT_EMAIL in your environment
     vapid_contact_email: str = "admin@example.com"
     newsapi_key: str = ""
+    anthropic_api_key: str = ""
 
     model_config = {"env_file": ".env"}
 

@@ -39,16 +39,25 @@ class SignalResult:
     risk_flags: list[str] = field(default_factory=list)
 
 
-def score_articles(articles: list[ArticleFeatures]) -> Optional[SignalResult]:
-    """Score a list of articles for one stock. Returns None if below signal threshold."""
+def score_articles(articles: list[ArticleFeatures], momentum: float = 0.0) -> Optional[SignalResult]:
+    """Score a list of articles for one stock. Returns None if below signal threshold.
+
+    momentum: 5-day price trend clamped to [-1.0, 1.0]. Positive momentum boosts
+    opportunity score; negative momentum boosts crash risk. Weight capped at 0.3
+    so news remains the primary signal driver.
+    """
     if not articles:
         return None
 
     positive = [a for a in articles if a.sentiment_score > 0]
     negative = [a for a in articles if a.sentiment_score <= 0]
 
-    opportunity_score = min(1.0, max(0.0, _weighted_score(positive, lambda a: a.credibility_score)))
-    crash_risk_score = min(1.0, max(0.0, _weighted_score(negative, lambda a: a.severity)))
+    raw_opportunity = _weighted_score(positive, lambda a: a.credibility_score)
+    raw_crash_risk = _weighted_score(negative, lambda a: a.severity)
+
+    # Apply momentum: positive trend boosts opportunity, negative trend boosts crash risk
+    opportunity_score = min(1.0, max(0.0, raw_opportunity * (1 + 0.3 * momentum)))
+    crash_risk_score = min(1.0, max(0.0, raw_crash_risk * (1 - 0.3 * momentum)))
 
     if crash_risk_score > 0.75:
         direction, confidence = "crash_risk", crash_risk_score

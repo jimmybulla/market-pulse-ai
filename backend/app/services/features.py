@@ -36,12 +36,12 @@ CREDIBILITY: dict[str, float] = {
 _DEFAULT_CREDIBILITY = 0.55
 
 EVENT_WEIGHTS: dict[str, float] = {
-    "earnings":   1.0,
-    "regulation": 1.0,
-    "m&a":        0.9,
+    "earnings":   1.5,
+    "m&a":        1.3,
+    "regulation": 1.2,
+    "product":    0.9,
     "executive":  0.8,
-    "product":    0.7,
-    "macro":      0.5,
+    "macro":      0.4,
 }
 
 
@@ -81,17 +81,17 @@ def _novelty(published_at: datetime) -> float:
     if published_at.tzinfo is None:
         published_at = published_at.replace(tzinfo=timezone.utc)
     age_hours = (now - published_at).total_seconds() / 3600
-    if age_hours < 2:
+    if age_hours < 1:
         return 1.0
     elif age_hours < 6:
         return 0.85
     elif age_hours < 12:
-        return 0.70
+        return 0.65
     elif age_hours < 24:
-        return 0.50
+        return 0.40
     elif age_hours < 48:
-        return 0.30
-    return 0.10
+        return 0.15
+    return 0.05
 
 
 def _severity(event_type: str, sentiment_score: float) -> float:

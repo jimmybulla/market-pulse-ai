@@ -83,7 +83,7 @@ def test_credibility_subdomain_stripped():
 # --- _novelty ---
 
 def test_novelty_very_fresh():
-    published = _now() - timedelta(hours=1)
+    published = _now() - timedelta(minutes=30)
     assert _novelty(published) == 1.0
 
 
@@ -94,34 +94,34 @@ def test_novelty_under_6h():
 
 def test_novelty_under_12h():
     published = _now() - timedelta(hours=8)
-    assert _novelty(published) == 0.70
+    assert _novelty(published) == 0.65
 
 
 def test_novelty_under_24h():
     published = _now() - timedelta(hours=20)
-    assert _novelty(published) == 0.50
+    assert _novelty(published) == 0.40
 
 
 def test_novelty_under_48h():
     published = _now() - timedelta(hours=36)
-    assert _novelty(published) == 0.30
+    assert _novelty(published) == 0.15
 
 
 def test_novelty_old():
     published = _now() - timedelta(hours=72)
-    assert _novelty(published) == 0.10
+    assert _novelty(published) == 0.05
 
 
 # --- _severity ---
 
 def test_severity_earnings_high_sentiment():
     sev = _severity("earnings", 0.9)
-    assert sev == pytest.approx(min(1.0, 0.9 * 1.0))
+    assert sev == pytest.approx(min(1.0, 0.9 * 1.5))
 
 
 def test_severity_macro_low():
     sev = _severity("macro", 0.5)
-    assert sev == pytest.approx(min(1.0, 0.5 * 0.5))
+    assert sev == pytest.approx(min(1.0, 0.5 * 0.4))
 
 
 def test_severity_capped_at_1():

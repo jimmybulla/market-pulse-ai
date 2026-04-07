@@ -97,3 +97,39 @@ def test_scores_clamped_to_one():
     assert result is not None
     assert result.opportunity_score <= 1.0
     assert result.crash_risk_score <= 1.0
+
+
+def test_positive_momentum_boosts_bullish_opportunity():
+    articles = [
+        make_article(sentiment=0.60, credibility=0.75, novelty=0.70, severity=0.55),
+    ]
+    result_flat = score_articles(articles, momentum=0.0)
+    result_up = score_articles(articles, momentum=0.5)
+    assert result_flat is not None and result_up is not None
+    assert result_up.opportunity_score > result_flat.opportunity_score
+
+
+def test_negative_momentum_reduces_bullish_opportunity():
+    articles = [
+        make_article(sentiment=0.60, credibility=0.75, novelty=0.70, severity=0.55),
+    ]
+    result_flat = score_articles(articles, momentum=0.0)
+    result_down = score_articles(articles, momentum=-0.5)
+    assert result_flat is not None and result_down is not None
+    assert result_down.opportunity_score < result_flat.opportunity_score
+
+
+def test_momentum_scores_clamped_to_one():
+    articles = [make_article(sentiment=0.99, credibility=0.99, novelty=0.99, severity=0.99)]
+    result = score_articles(articles, momentum=1.0)
+    assert result is not None
+    assert result.opportunity_score <= 1.0
+    assert result.crash_risk_score <= 1.0
+
+
+def test_momentum_defaults_to_zero():
+    articles = [make_article(sentiment=0.75)]
+    result_default = score_articles(articles)
+    result_explicit = score_articles(articles, momentum=0.0)
+    assert result_default is not None and result_explicit is not None
+    assert result_default.opportunity_score == result_explicit.opportunity_score
