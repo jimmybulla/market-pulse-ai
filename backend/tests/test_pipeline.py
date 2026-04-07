@@ -171,10 +171,14 @@ def test_run_pipeline_calls_all_steps(monkeypatch):
     def fake_prices(db):
         calls.append("prices")
 
+    def fake_price_history(db):
+        calls.append("price_history")
+
     monkeypatch.setattr(pl, "ingest_news", fake_ingest)
     monkeypatch.setattr(pl, "extract_features_for_articles", fake_extract)
     monkeypatch.setattr(pl, "generate_signals", fake_generate)
     monkeypatch.setattr(pl, "update_prices", fake_prices)
+    monkeypatch.setattr(pl, "update_price_history", fake_price_history)
 
     db = MagicMock()
     db.table.return_value.select.return_value.execute.return_value.data = [
@@ -183,7 +187,7 @@ def test_run_pipeline_calls_all_steps(monkeypatch):
 
     pl.run_pipeline(db)
 
-    assert calls == ["ingest", "extract", "generate", "prices"]
+    assert calls == ["ingest", "extract", "generate", "prices", "price_history"]
 
 
 # --- _compute_historical_analog ---
