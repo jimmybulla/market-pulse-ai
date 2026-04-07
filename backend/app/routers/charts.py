@@ -43,6 +43,7 @@ def get_price_history(
     )
     if stock_row and stock_row.get("price_history_90d"):
         all_data = stock_row["price_history_90d"]
+        # Note: if pipeline has fewer entries than requested days, returns all available data
         sliced = all_data[-days:] if len(all_data) >= days else all_data
         return {"ticker": upper, "range": period, "data": sliced}
 
