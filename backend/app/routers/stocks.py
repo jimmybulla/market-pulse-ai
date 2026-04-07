@@ -1,4 +1,5 @@
 # backend/app/routers/stocks.py
+from datetime import datetime, timezone
 from typing import Optional
 from fastapi import APIRouter, Query, HTTPException, Depends
 from supabase import Client
@@ -47,7 +48,18 @@ def get_stock(ticker: str, db: Client = Depends(get_db)):
         "stock_id", stock_result.data["id"]
     ).order("created_at", desc=True).limit(1).execute()
 
+    latest_signal = None
+    if signal_result.data:
+        sig = signal_result.data[0]
+        expires_at_raw = sig.get("expires_at")
+        if expires_at_raw:
+            expires_dt = datetime.fromisoformat(str(expires_at_raw).replace("Z", "+00:00"))
+            sig["is_expired"] = expires_dt < datetime.now(timezone.utc)
+        else:
+            sig["is_expired"] = False
+        latest_signal = sig
+
     return {
         **stock_result.data,
-        "latest_signal": signal_result.data[0] if signal_result.data else None,
+        "latest_signal": latest_signal,
     }
