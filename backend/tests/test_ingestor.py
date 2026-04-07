@@ -9,12 +9,12 @@ from app.services.ingestor import ingest_news
 def _make_db(existing_urls: list[str] = None, ticker_rows: list[dict] = None):
     db = MagicMock()
 
-    # Set up the URL query to return existing URLs (includes .gte() in chain now)
+    # URL dedup query: select("url").gte("published_at", ...).execute()
     url_data = [{"url": u} for u in (existing_urls or [])]
     db.table.return_value.select.return_value.gte.return_value.execute.return_value.data = url_data
 
-    # insert returns something with .data
-    db.table.return_value.insert.return_value.execute.return_value.data = [
+    # ingestor calls .upsert(), not .insert()
+    db.table.return_value.upsert.return_value.execute.return_value.data = [
         {"id": "new-article-1"}
     ]
     return db
@@ -50,7 +50,7 @@ def test_ingest_news_skips_duplicate_url():
         result = ingest_news(db, ["AAPL"])
 
     assert result == []
-    db.table.return_value.insert.assert_not_called()
+    db.table.return_value.upsert.assert_not_called()
 
 
 def test_ingest_news_handles_ticker_error_gracefully():
@@ -67,9 +67,9 @@ def test_ingest_news_handles_ticker_error_gracefully():
 
 def test_ingest_news_multiple_tickers():
     db = MagicMock()
-    # URL query returns empty list (no existing URLs)
-    db.table.return_value.select.return_value.execute.return_value.data = []
-    db.table.return_value.insert.return_value.execute.return_value.data = [
+    # URL dedup query: select("url").gte(...).execute()
+    db.table.return_value.select.return_value.gte.return_value.execute.return_value.data = []
+    db.table.return_value.upsert.return_value.execute.return_value.data = [
         {"id": "article-x"}
     ]
 
@@ -94,7 +94,7 @@ def test_ingest_news_inserts_correct_fields():
         mock_ticker.return_value.news = [article]
         ingest_news(db, ["AAPL"])
 
-    insert_call = db.table.return_value.insert.call_args
+    insert_call = db.table.return_value.upsert.call_args
     inserted = insert_call[0][0]
     assert inserted["headline"] == "Apple earnings beat"
     assert inserted["url"] == "https://reuters.com/xyz"
