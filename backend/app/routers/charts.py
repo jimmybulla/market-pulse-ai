@@ -27,41 +27,58 @@ _PRICE_CACHE_TTL = 3600  # 1 hour
 def get_price_history(
     ticker: str,
     period: RangeParam = Query("30d", alias="range"),
+    db: Client = Depends(get_db),
 ):
-    cache_key = f"{ticker.upper()}:{period}"
+    upper = ticker.upper()
+    days = _DAYS[period]
+
+    # Try Supabase-cached history first (populated by pipeline, avoids yfinance rate limits)
+    stock_row = (
+        db.table("stocks")
+        .select("price_history_90d")
+        .eq("ticker", upper)
+        .maybe_single()
+        .execute()
+        .data
+    )
+    if stock_row and stock_row.get("price_history_90d"):
+        all_data = stock_row["price_history_90d"]
+        sliced = all_data[-days:] if len(all_data) >= days else all_data
+        return {"ticker": upper, "range": period, "data": sliced}
+
+    # Fallback: fetch from yfinance (used before first pipeline run)
+    cache_key = f"{upper}:{period}"
     now = time.time()
     cached = _PRICE_CACHE.get(cache_key)
     if cached and now - cached[0] < _PRICE_CACHE_TTL:
-        return {"ticker": ticker.upper(), "range": period, "data": cached[1]}
+        return {"ticker": upper, "range": period, "data": cached[1]}
 
-    days = _DAYS[period]
     end = datetime.now(timezone.utc)
     start = end - timedelta(days=days)
     try:
-        hist = yf.Ticker(ticker.upper()).history(start=start, end=end)
+        hist = yf.Ticker(upper).history(start=start, end=end)
     except Exception as exc:
-        logger.error("[charts] price-history error for %s: %s: %s", ticker.upper(), type(exc).__name__, exc)
-        # Return stale cache if available rather than failing
+        logger.error("[charts] price-history error for %s: %s: %s", upper, type(exc).__name__, exc)
         if cached:
-            logger.warning("[charts] returning stale cache for %s due to error", ticker.upper())
-            return {"ticker": ticker.upper(), "range": period, "data": cached[1]}
+            logger.warning("[charts] returning stale cache for %s due to error", upper)
+            return {"ticker": upper, "range": period, "data": cached[1]}
         raise HTTPException(
             status_code=502,
-            detail=f"Failed to fetch price data for {ticker.upper()}: {type(exc).__name__}",
+            detail=f"Failed to fetch price data for {upper}: {type(exc).__name__}",
         )
     if hist.empty:
         if cached:
-            return {"ticker": ticker.upper(), "range": period, "data": cached[1]}
+            return {"ticker": upper, "range": period, "data": cached[1]}
         raise HTTPException(
             status_code=502,
-            detail=f"No price data available for {ticker.upper()}",
+            detail=f"No price data available for {upper}",
         )
     data = [
         {"date": str(idx.date()), "close": round(float(row["Close"]), 2)}
         for idx, row in hist.iterrows()
     ]
     _PRICE_CACHE[cache_key] = (now, data)
-    return {"ticker": ticker.upper(), "range": period, "data": data}
+    return {"ticker": upper, "range": period, "data": data}
 
 
 @router.get("/{ticker}/sentiment-trend")

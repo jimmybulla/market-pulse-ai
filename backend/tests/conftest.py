@@ -7,6 +7,15 @@ from app.database import get_db
 
 
 @pytest.fixture(autouse=True)
+def clear_price_cache():
+    """Clear the in-memory price cache between tests to avoid cross-test pollution."""
+    from app.routers import charts
+    charts._PRICE_CACHE.clear()
+    yield
+    charts._PRICE_CACHE.clear()
+
+
+@pytest.fixture(autouse=True)
 def no_scheduler(monkeypatch):
     """Prevent APScheduler from starting during tests."""
     from app import scheduler as sched_module
