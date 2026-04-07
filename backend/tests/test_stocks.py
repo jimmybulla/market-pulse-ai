@@ -101,3 +101,19 @@ def test_get_stock_sets_is_expired_false_for_active_signal(client):
     response = c.get("/stocks/NVDA")
     assert response.status_code == 200
     assert response.json()["latest_signal"]["is_expired"] is False
+
+
+def test_get_stock_sets_is_expired_false_when_no_expires_at(client):
+    c, mock_db = client
+    mock_stock_exec = MagicMock()
+    mock_stock_exec.data = MOCK_STOCK
+    mock_signal_exec = MagicMock()
+    signal_no_expiry = {**MOCK_SIGNAL, "expires_at": None}
+    mock_signal_exec.data = [signal_no_expiry]
+
+    mock_db.table.return_value.select.return_value.eq.return_value.maybe_single.return_value.execute.return_value = mock_stock_exec
+    mock_db.table.return_value.select.return_value.eq.return_value.order.return_value.limit.return_value.execute.return_value = mock_signal_exec
+
+    response = c.get("/stocks/NVDA")
+    assert response.status_code == 200
+    assert response.json()["latest_signal"]["is_expired"] is False
