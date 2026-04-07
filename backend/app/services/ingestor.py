@@ -72,7 +72,11 @@ def ingest_news(db: Client, tickers: list[str]) -> list[str]:
             }
 
             try:
-                resp = db.table("news_articles").insert(row).execute()
+                resp = (
+                    db.table("news_articles")
+                    .upsert(row, on_conflict="url", ignore_duplicates=True)
+                    .execute()
+                )
                 for inserted in resp.data or []:
                     new_ids.append(inserted["id"])
                     new_count += 1
