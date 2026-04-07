@@ -93,12 +93,7 @@ def generate_signals(db: Client) -> None:
                 "sources":         domains,
                 "article_ids":     article_ids,
             }
-            # TODO: replace with real backtesting data (hit_rate and sample_size are MVP placeholders)
-            historical_analog = {
-                "avg_move":    round(result.expected_move_high * 0.9, 4),
-                "hit_rate":    0.64,   # placeholder
-                "sample_size": 15,     # placeholder
-            }
+            historical_analog = _compute_historical_analog(db, stock["id"], result.direction)
 
             now = datetime.now(timezone.utc)
             signal_data = {
@@ -258,6 +253,35 @@ def _record_signal_history(
         "horizon_days":       signal_data["horizon_days"],
         "price_at_signal":    last_price,
     }).execute()
+
+
+def _compute_historical_analog(
+    db: Client,
+    stock_id: str,
+    direction: str,
+) -> Optional[dict]:
+    """
+    Compute real historical analog stats from resolved signal_history rows.
+    Returns None when no resolved data exists for this stock+direction.
+    """
+    rows = (
+        db.table("signal_history")
+        .select("actual_move, was_correct")
+        .eq("stock_id", stock_id)
+        .eq("direction", direction)
+        .not_.is_("was_correct", "null")
+        .execute()
+        .data or []
+    )
+    if not rows:
+        return None
+    avg_move = round(mean(abs(r["actual_move"]) for r in rows), 4)
+    hit_rate = round(sum(1 for r in rows if r["was_correct"]) / len(rows), 4)
+    return {
+        "avg_move": avg_move,
+        "hit_rate": hit_rate,
+        "sample_size": len(rows),
+    }
 
 
 def resolve_signal_outcomes(db: Client) -> None:

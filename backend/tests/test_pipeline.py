@@ -4,6 +4,7 @@ from unittest.mock import MagicMock, patch, call
 import pytest
 
 from app.services.pipeline import (
+    _compute_historical_analog,
     extract_features_for_articles,
     generate_signals,
     update_prices,
@@ -96,6 +97,8 @@ def test_generate_signals_upserts_signal():
     db.table.return_value.select.return_value.execute.return_value.data = stocks
     db.table.return_value.select.return_value.gte.return_value.filter.return_value.neq.return_value.execute.return_value.data = articles
     db.table.return_value.select.return_value.eq.return_value.execute.return_value.data = []
+    # Ensure the .not_.is_() chain also returns empty data for signal_history
+    db.table.return_value.select.return_value.eq.return_value.eq.return_value.not_.is_.return_value.execute.return_value.data = []
 
     with patch("app.services.pipeline.score_articles", return_value=_make_signal_result()):
         generate_signals(db)
@@ -179,3 +182,63 @@ def test_run_pipeline_calls_all_steps(monkeypatch):
     pl.run_pipeline(db)
 
     assert calls == ["ingest", "extract", "generate", "prices"]
+
+
+# --- _compute_historical_analog ---
+
+def _make_history_db(rows: list[dict]) -> MagicMock:
+    """Return a mock db whose signal_history select chain returns `rows`."""
+    db = MagicMock()
+    (
+        db.table.return_value
+        .select.return_value
+        .eq.return_value
+        .eq.return_value
+        .not_.is_.return_value
+        .execute.return_value
+        .data
+    ) = rows
+    return db
+
+
+def test_compute_historical_analog_correct_stats():
+    rows = [
+        {"actual_move": 0.05, "was_correct": True},
+        {"actual_move": -0.03, "was_correct": False},
+        {"actual_move": 0.07, "was_correct": True},
+    ]
+    db = _make_history_db(rows)
+    result = _compute_historical_analog(db, "stock-1", "bullish")
+    assert result is not None
+    assert result["sample_size"] == 3
+    assert result["hit_rate"] == pytest.approx(2 / 3, abs=0.001)
+    assert result["avg_move"] == pytest.approx((0.05 + 0.03 + 0.07) / 3, abs=0.001)
+
+
+def test_compute_historical_analog_returns_none_when_no_rows():
+    db = _make_history_db([])
+    result = _compute_historical_analog(db, "stock-1", "bullish")
+    assert result is None
+
+
+def test_compute_historical_analog_all_correct():
+    rows = [
+        {"actual_move": 0.04, "was_correct": True},
+        {"actual_move": 0.06, "was_correct": True},
+    ]
+    db = _make_history_db(rows)
+    result = _compute_historical_analog(db, "stock-1", "bullish")
+    assert result["hit_rate"] == 1.0
+    assert result["sample_size"] == 2
+
+
+def test_compute_historical_analog_uses_abs_actual_move():
+    # Bearish signals have negative actual_move when correct — avg_move should be positive
+    rows = [
+        {"actual_move": -0.08, "was_correct": True},
+        {"actual_move": -0.04, "was_correct": True},
+    ]
+    db = _make_history_db(rows)
+    result = _compute_historical_analog(db, "stock-1", "bearish")
+    assert result["avg_move"] == pytest.approx(0.06, abs=0.001)
+    assert result["avg_move"] > 0
