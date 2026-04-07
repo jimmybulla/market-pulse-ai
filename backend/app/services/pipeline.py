@@ -115,7 +115,7 @@ def generate_signals(db: Client) -> None:
 
             existing = (
                 db.table("signals")
-                .select("id, direction, confidence")
+                .select("id, direction, confidence, explanation")
                 .eq("stock_id", stock["id"])
                 .execute()
                 .data or []
@@ -125,6 +125,7 @@ def generate_signals(db: Client) -> None:
                 not existing
                 or existing[0]["direction"] != result.direction
                 or abs(existing[0]["confidence"] - result.confidence) >= 0.05
+                or existing[0].get("explanation") in (None, "", "AI analysis pending")
             )
 
             if signal_changed:
