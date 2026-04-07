@@ -28,8 +28,8 @@ def no_scheduler(monkeypatch):
 @pytest.fixture
 def mock_db():
     db = MagicMock()
-    db.table.return_value.select.return_value.order.return_value.range.return_value.execute.return_value.data = []
-    db.table.return_value.select.return_value.order.return_value.range.return_value.execute.return_value.count = 0
+    db.table.return_value.select.return_value.order.return_value.gte.return_value.range.return_value.execute.return_value.data = []
+    db.table.return_value.select.return_value.order.return_value.gte.return_value.range.return_value.execute.return_value.count = 0
     db.table.return_value.select.return_value.execute.return_value.data = []
     db.table.return_value.select.return_value.execute.return_value.count = 0
     db.table.return_value.select.return_value.maybe_single.return_value.execute.return_value.data = None
