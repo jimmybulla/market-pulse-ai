@@ -2,6 +2,7 @@
 from collections import defaultdict
 from datetime import datetime, timedelta, timezone
 from typing import Literal
+import time
 
 import logging
 
@@ -17,12 +18,22 @@ router = APIRouter()
 RangeParam = Literal["7d", "30d", "90d"]
 _DAYS: dict[str, int] = {"7d": 7, "30d": 30, "90d": 90}
 
+# Simple TTL cache: key → (timestamp, data)
+_PRICE_CACHE: dict[str, tuple[float, list]] = {}
+_PRICE_CACHE_TTL = 3600  # 1 hour
+
 
 @router.get("/{ticker}/price-history")
 def get_price_history(
     ticker: str,
     period: RangeParam = Query("30d", alias="range"),
 ):
+    cache_key = f"{ticker.upper()}:{period}"
+    now = time.time()
+    cached = _PRICE_CACHE.get(cache_key)
+    if cached and now - cached[0] < _PRICE_CACHE_TTL:
+        return {"ticker": ticker.upper(), "range": period, "data": cached[1]}
+
     days = _DAYS[period]
     end = datetime.now(timezone.utc)
     start = end - timedelta(days=days)
@@ -30,11 +41,17 @@ def get_price_history(
         hist = yf.Ticker(ticker.upper()).history(start=start, end=end)
     except Exception as exc:
         logger.error("[charts] price-history error for %s: %s: %s", ticker.upper(), type(exc).__name__, exc)
+        # Return stale cache if available rather than failing
+        if cached:
+            logger.warning("[charts] returning stale cache for %s due to error", ticker.upper())
+            return {"ticker": ticker.upper(), "range": period, "data": cached[1]}
         raise HTTPException(
             status_code=502,
             detail=f"Failed to fetch price data for {ticker.upper()}: {type(exc).__name__}",
         )
     if hist.empty:
+        if cached:
+            return {"ticker": ticker.upper(), "range": period, "data": cached[1]}
         raise HTTPException(
             status_code=502,
             detail=f"No price data available for {ticker.upper()}",
@@ -43,6 +60,7 @@ def get_price_history(
         {"date": str(idx.date()), "close": round(float(row["Close"]), 2)}
         for idx, row in hist.iterrows()
     ]
+    _PRICE_CACHE[cache_key] = (now, data)
     return {"ticker": ticker.upper(), "range": period, "data": data}
 
 
