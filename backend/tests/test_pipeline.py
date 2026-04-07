@@ -255,13 +255,14 @@ def test_compute_historical_analog_uses_abs_actual_move():
 def test_update_price_history_stores_data():
     db = MagicMock()
     db.table.return_value.select.return_value.execute.return_value.data = [
-        {"id": "stock-1", "ticker": "AAPL"}
+        {"id": "stock-1", "ticker": "AAPL", "price_history_90d": None}
     ]
     mock_hist = pd.DataFrame(
         {"Close": [210.0, 215.0, 220.0]},
         index=pd.DatetimeIndex(["2026-04-01", "2026-04-02", "2026-04-03"]),
     )
-    with patch("app.services.pipeline.yf.Ticker") as mock_ticker:
+    with patch("app.services.pipeline.yf.Ticker") as mock_ticker, \
+         patch("app.services.pipeline.time.sleep"):
         mock_ticker.return_value.history.return_value = mock_hist
         update_price_history(db)
 
@@ -275,9 +276,10 @@ def test_update_price_history_stores_data():
 def test_update_price_history_skips_empty_history():
     db = MagicMock()
     db.table.return_value.select.return_value.execute.return_value.data = [
-        {"id": "stock-1", "ticker": "FAKE"}
+        {"id": "stock-1", "ticker": "FAKE", "price_history_90d": None}
     ]
-    with patch("app.services.pipeline.yf.Ticker") as mock_ticker:
+    with patch("app.services.pipeline.yf.Ticker") as mock_ticker, \
+         patch("app.services.pipeline.time.sleep"):
         mock_ticker.return_value.history.return_value = pd.DataFrame()
         update_price_history(db)
 
@@ -287,10 +289,25 @@ def test_update_price_history_skips_empty_history():
 def test_update_price_history_skips_on_exception():
     db = MagicMock()
     db.table.return_value.select.return_value.execute.return_value.data = [
-        {"id": "stock-1", "ticker": "AAPL"}
+        {"id": "stock-1", "ticker": "AAPL", "price_history_90d": None}
     ]
-    with patch("app.services.pipeline.yf.Ticker") as mock_ticker:
+    with patch("app.services.pipeline.yf.Ticker") as mock_ticker, \
+         patch("app.services.pipeline.time.sleep"):
         mock_ticker.return_value.history.side_effect = Exception("rate limited")
         update_price_history(db)
+
+    db.table.return_value.update.assert_not_called()
+
+
+def test_update_price_history_skips_ticker_already_current_today():
+    from datetime import datetime, timezone
+    today = str(datetime.now(timezone.utc).date())
+    db = MagicMock()
+    db.table.return_value.select.return_value.execute.return_value.data = [
+        {"id": "stock-1", "ticker": "AAPL", "price_history_90d": [{"date": today, "close": 210.0}]},
+    ]
+    with patch("app.services.pipeline.yf.Ticker") as mock_ticker:
+        update_price_history(db)
+        mock_ticker.return_value.history.assert_not_called()
 
     db.table.return_value.update.assert_not_called()
