@@ -1,15 +1,17 @@
 // frontend/app/page.tsx
-import { getSignals, getNewsFeed } from '@/lib/api'
+import { getSignals, getNewsFeed, getSectorHeatmap } from '@/lib/api'
 import SignalTrackerRow from '@/components/signals/SignalTrackerRow'
 import NewsFeed from '@/components/news/NewsFeed'
+import SectorHeatmap from '@/components/analytics/SectorHeatmap'
 import TopBar from '@/components/layout/TopBar'
-import { TrendingUp, AlertTriangle, Clock } from 'lucide-react'
+import { TrendingUp, AlertTriangle, Clock, BarChart2 } from 'lucide-react'
 
 export default async function DashboardPage() {
-  const [bullish, crashRisk, newsFeed] = await Promise.all([
+  const [bullish, crashRisk, newsFeed, heatmap] = await Promise.all([
     getSignals({ direction: 'bullish', limit: 10 }),
     getSignals({ direction: 'crash_risk', limit: 10 }),
     getNewsFeed(),
+    getSectorHeatmap(),
   ])
 
   return (
@@ -79,6 +81,17 @@ export default async function DashboardPage() {
               ))}
             </div>
           )}
+        </section>
+
+        {/* Sector Activity */}
+        <section>
+          <div className="flex items-center gap-2 mb-3">
+            <BarChart2 className="w-4 h-4 text-brand-cyan" />
+            <h2 className="text-sm font-semibold text-gray-300">Sector Activity</h2>
+          </div>
+          <div className="bg-surface-card rounded-xl border border-white/8 p-4">
+            <SectorHeatmap data={heatmap} />
+          </div>
         </section>
 
         {/* Breaking News */}
