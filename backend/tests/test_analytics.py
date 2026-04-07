@@ -149,3 +149,60 @@ def test_performance_invalid_period_returns_422(client):
     c, mock_db = client
     response = c.get("/analytics/performance-over-time?period=daily")
     assert response.status_code == 422
+
+
+# ── /analytics/sector-heatmap ─────────────────────────────────────────
+
+def test_sector_heatmap_returns_empty_list_when_no_signals(client):
+    c, mock_db = client
+    mock_exec = MagicMock()
+    mock_exec.data = []
+    mock_db.table.return_value.select.return_value.gte.return_value.execute.return_value = mock_exec
+
+    response = c.get("/analytics/sector-heatmap")
+    assert response.status_code == 200
+    assert response.json() == []
+
+
+def test_sector_heatmap_groups_by_sector(client):
+    c, mock_db = client
+    mock_exec = MagicMock()
+    mock_exec.data = [
+        {"direction": "bullish", "stocks": {"sector": "Technology"}},
+        {"direction": "bullish", "stocks": {"sector": "Technology"}},
+        {"direction": "bearish", "stocks": {"sector": "Technology"}},
+        {"direction": "bullish", "stocks": {"sector": "Healthcare"}},
+    ]
+    mock_db.table.return_value.select.return_value.gte.return_value.execute.return_value = mock_exec
+
+    response = c.get("/analytics/sector-heatmap")
+    assert response.status_code == 200
+    body = response.json()
+    tech = next(s for s in body if s["sector"] == "Technology")
+    health = next(s for s in body if s["sector"] == "Healthcare")
+    assert tech["signal_count"] == 3
+    assert tech["bullish"] == 2
+    assert tech["bearish"] == 1
+    assert tech["crash_risk"] == 0
+    assert health["signal_count"] == 1
+    assert health["bullish"] == 1
+
+
+def test_sector_heatmap_sorted_by_signal_count_desc(client):
+    c, mock_db = client
+    mock_exec = MagicMock()
+    mock_exec.data = [
+        {"direction": "bullish", "stocks": {"sector": "Healthcare"}},
+        {"direction": "bullish", "stocks": {"sector": "Technology"}},
+        {"direction": "bearish", "stocks": {"sector": "Technology"}},
+        {"direction": "bullish", "stocks": {"sector": "Technology"}},
+    ]
+    mock_db.table.return_value.select.return_value.gte.return_value.execute.return_value = mock_exec
+
+    response = c.get("/analytics/sector-heatmap")
+    assert response.status_code == 200
+    body = response.json()
+    assert body[0]["sector"] == "Technology"
+    assert body[0]["signal_count"] == 3
+    assert body[1]["sector"] == "Healthcare"
+    assert body[1]["signal_count"] == 1

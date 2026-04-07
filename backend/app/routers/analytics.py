@@ -159,3 +159,36 @@ def get_performance_over_time(
         )
         for key, vals in sorted(buckets.items())
     ]
+
+
+# ── /sector-heatmap ───────────────────────────────────────────────────
+
+@router.get("/sector-heatmap")
+def get_sector_heatmap(db: Client = Depends(get_db)):
+    from datetime import timezone
+    now_iso = datetime.now(timezone.utc).isoformat()
+    rows = (
+        db.table("signals")
+        .select("direction, stocks(sector)")
+        .gte("expires_at", now_iso)
+        .execute()
+        .data or []
+    )
+
+    counts: dict[str, dict] = {}
+    for row in rows:
+        sector = (row.get("stocks") or {}).get("sector") or "Unknown"
+        if sector not in counts:
+            counts[sector] = {
+                "sector": sector,
+                "signal_count": 0,
+                "bullish": 0,
+                "bearish": 0,
+                "crash_risk": 0,
+            }
+        counts[sector]["signal_count"] += 1
+        direction = row.get("direction", "")
+        if direction in ("bullish", "bearish", "crash_risk"):
+            counts[sector][direction] += 1
+
+    return sorted(counts.values(), key=lambda x: x["signal_count"], reverse=True)
