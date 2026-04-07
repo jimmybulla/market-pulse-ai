@@ -138,3 +138,11 @@ export interface PerformanceData {
   weekly: PerformanceBucket[]
   monthly: PerformanceBucket[]
 }
+
+export interface SectorHeatmapEntry {
+  sector: string
+  signal_count: number
+  bullish: number
+  bearish: number
+  crash_risk: number
+}

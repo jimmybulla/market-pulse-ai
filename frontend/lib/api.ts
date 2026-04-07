@@ -5,6 +5,7 @@ import type {
   PaginatedNews, SignalDirection,
   SignalHistoryEntry, BacktestingStats,
   NewsFeedItem, PerformanceData,
+  SectorHeatmapEntry,
 } from './types'
 
 const rawBackend = process.env.BACKEND_URL || 'http://localhost:8000'
@@ -135,5 +136,15 @@ export async function getPerformanceOverTime(): Promise<PerformanceData> {
     return { weekly, monthly }
   } catch {
     return { weekly: [], monthly: [] }
+  }
+}
+
+export async function getSectorHeatmap(): Promise<SectorHeatmapEntry[]> {
+  try {
+    const res = await fetch(`${BACKEND}/analytics/sector-heatmap`, { cache: 'no-store' })
+    if (!res.ok) return []
+    return res.json()
+  } catch {
+    return []
   }
 }
