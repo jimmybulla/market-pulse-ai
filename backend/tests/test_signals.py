@@ -125,19 +125,21 @@ def test_get_signal_sets_is_expired_false_when_future_expires_at(client):
 
 
 def test_list_signals_excludes_expired_signals(client):
-    """list_signals must apply .gte("expires_at", now) filter — verified by mock chain."""
+    """list_signals must call .gte("expires_at", now) to exclude expired signals."""
     c, mock_db = client
     mock_exec = MagicMock()
     mock_exec.data = [dict(MOCK_SIGNAL_ROW_ACTIVE)]
     mock_exec.count = 1
-    # New chain after .gte() is added: select -> order -> gte -> range -> execute
     mock_db.table.return_value.select.return_value.order.return_value.gte.return_value.range.return_value.execute.return_value = mock_exec
-    # Count chain: select -> gte -> execute
     mock_db.table.return_value.select.return_value.gte.return_value.execute.return_value = mock_exec
 
     response = c.get("/signals")
     assert response.status_code == 200
     assert len(response.json()["data"]) == 1
+    # Assert the expiry filter was actually applied
+    mock_db.table.return_value.select.return_value.order.return_value.gte.assert_called_once()
+    call_args = mock_db.table.return_value.select.return_value.order.return_value.gte.call_args
+    assert call_args[0][0] == "expires_at"
 
 
 def test_list_signals_is_expired_false_for_active_signal(client):

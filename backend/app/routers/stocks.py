@@ -44,6 +44,8 @@ def get_stock(ticker: str, db: Client = Depends(get_db)):
     if not stock_result.data:
         raise HTTPException(status_code=404, detail="Stock not found")
 
+    # Intentionally fetches expired signals too — stock detail shows them with is_expired=True
+    # (unlike list_signals which filters expired signals out entirely)
     signal_result = db.table("signals").select("*").eq(
         "stock_id", stock_result.data["id"]
     ).order("created_at", desc=True).limit(1).execute()
