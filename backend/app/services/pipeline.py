@@ -145,6 +145,7 @@ def generate_signals(db: Client) -> None:
                 signal_id = existing[0]["id"]
             else:
                 signal_data["created_at"] = now.isoformat()
+                signal_data["price_at_signal"] = stock.get("last_price")
                 insert_result = db.table("signals").insert(signal_data).execute()
                 signal_id = insert_result.data[0]["id"] if insert_result.data else None
 
@@ -325,6 +326,27 @@ def _compute_historical_analog(
     }
 
 
+def sync_resolved_signals(db: Client) -> None:
+    """Copy actual_move, was_correct, accuracy_notes from signal_history back to signals."""
+    rows = (
+        db.table("signal_history")
+        .select("signal_id, actual_move, was_correct, accuracy_notes")
+        .not_.is_("was_correct", "null")
+        .not_.is_("signal_id", "null")
+        .execute()
+        .data or []
+    )
+    synced = 0
+    for row in rows:
+        db.table("signals").update({
+            "actual_move":    row["actual_move"],
+            "was_correct":    row["was_correct"],
+            "accuracy_notes": row.get("accuracy_notes"),
+        }).eq("id", row["signal_id"]).is_("was_correct", "null").execute()
+        synced += 1
+    logger.info("[pipeline] Synced %d resolved signal outcomes to signals table", synced)
+
+
 def resolve_signal_outcomes(db: Client) -> None:
     """Resolve actual outcomes for signal_history rows whose horizon has passed."""
     now = datetime.now(timezone.utc)
@@ -498,6 +520,12 @@ def run_pipeline(db: Client) -> None:
         resolve_signal_outcomes(db)
     except Exception as exc:
         logger.error("[pipeline] Outcome resolution failed: %s", exc)
+
+    # Step 5b: Copy resolution data back to signals table
+    try:
+        sync_resolved_signals(db)
+    except Exception as exc:
+        logger.error("[pipeline] sync_resolved_signals failed: %s", exc)
 
     # Step 6: Push alerts for newly created high-confidence signals
     try:

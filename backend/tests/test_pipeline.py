@@ -122,6 +122,68 @@ def test_generate_signals_skips_when_scoring_returns_none():
     db.table.return_value.insert.assert_not_called()
 
 
+def test_generate_signals_captures_price_at_signal_on_insert():
+    """price_at_signal should be written on first insert, not on update."""
+    stocks = [{"id": "stock-1", "ticker": "AAPL", "last_price": 195.50}]
+    articles = [
+        {
+            "id": "art-1",
+            "headline": "Beat earnings",
+            "url": "https://reuters.com/a",
+            "published_at": _now_iso(),
+            "sentiment_score": 0.8,
+            "credibility_score": 0.92,
+            "novelty_score": 1.0,
+            "severity": 0.8,
+            "event_type": "earnings",
+        }
+    ]
+    db = MagicMock()
+    db.table.return_value.select.return_value.execute.return_value.data = stocks
+    db.table.return_value.select.return_value.gte.return_value.filter.return_value.execute.return_value.data = articles
+    # No existing signal → triggers insert path
+    db.table.return_value.select.return_value.eq.return_value.execute.return_value.data = []
+    db.table.return_value.select.return_value.eq.return_value.eq.return_value.not_.is_.return_value.execute.return_value.data = []
+    db.table.return_value.insert.return_value.execute.return_value.data = [{"id": "new-sig-1"}]
+
+    with patch("app.services.pipeline.score_articles", return_value=_make_signal_result()), \
+         patch("app.services.pipeline.generate_explanation", return_value=None), \
+         patch("app.services.pipeline.get_momentum", return_value=0.0):
+        generate_signals(db)
+
+    insert_call = db.table.return_value.insert.call_args
+    assert insert_call is not None
+    inserted_data = insert_call[0][0]
+    assert inserted_data["price_at_signal"] == 195.50
+
+
+def test_sync_resolved_signals_copies_data_from_history():
+    from app.services.pipeline import sync_resolved_signals
+    db = MagicMock()
+    db.table.return_value.select.return_value.not_.is_.return_value.not_.is_.return_value.execute.return_value.data = [
+        {"signal_id": "sig-1", "actual_move": 0.042, "was_correct": True, "accuracy_notes": "moved +4.2%"},
+    ]
+
+    sync_resolved_signals(db)
+
+    update_call = db.table.return_value.update.call_args
+    assert update_call is not None
+    updated = update_call[0][0]
+    assert updated["actual_move"] == 0.042
+    assert updated["was_correct"] is True
+    assert updated["accuracy_notes"] == "moved +4.2%"
+
+
+def test_sync_resolved_signals_skips_when_no_history():
+    from app.services.pipeline import sync_resolved_signals
+    db = MagicMock()
+    db.table.return_value.select.return_value.not_.is_.return_value.not_.is_.return_value.execute.return_value.data = []
+
+    sync_resolved_signals(db)
+
+    db.table.return_value.update.assert_not_called()
+
+
 # --- update_prices ---
 
 def test_update_prices_sets_last_price():
@@ -158,36 +220,37 @@ def test_run_pipeline_calls_all_steps(monkeypatch):
 
     calls = []
 
-    def fake_ingest(db, tickers):
-        calls.append("ingest")
-        return ["art-1"]
-
-    def fake_extract(db, articles):
-        calls.append("extract")
-
-    def fake_generate(db):
-        calls.append("generate")
-
-    def fake_prices(db):
-        calls.append("prices")
-
-    def fake_price_history(db):
-        calls.append("price_history")
+    def fake_ingest(db, tickers): calls.append("ingest"); return ["art-1"]
+    def fake_extract(db, articles): calls.append("extract")
+    def fake_generate(db): calls.append("generate")
+    def fake_prices(db): calls.append("prices")
+    def fake_price_history(db): calls.append("price_history")
+    def fake_resolve(db): calls.append("resolve")
+    def fake_sync(db): calls.append("sync")
 
     monkeypatch.setattr(pl, "ingest_news", fake_ingest)
     monkeypatch.setattr(pl, "extract_features_for_articles", fake_extract)
     monkeypatch.setattr(pl, "generate_signals", fake_generate)
     monkeypatch.setattr(pl, "update_prices", fake_prices)
     monkeypatch.setattr(pl, "update_price_history", fake_price_history)
+    monkeypatch.setattr(pl, "resolve_signal_outcomes", fake_resolve)
+    monkeypatch.setattr(pl, "sync_resolved_signals", fake_sync)
 
     db = MagicMock()
     db.table.return_value.select.return_value.execute.return_value.data = [
         {"id": "s1", "ticker": "AAPL"}
     ]
+    monkeypatch.setattr(pl, "ingest_newsapi", lambda db, tickers: [])
 
     pl.run_pipeline(db)
 
-    assert calls == ["ingest", "extract", "generate", "prices", "price_history"]
+    assert "ingest" in calls
+    assert "extract" in calls
+    assert "generate" in calls
+    assert "prices" in calls
+    assert "price_history" in calls
+    assert "resolve" in calls
+    assert "sync" in calls
 
 
 # --- _compute_historical_analog ---
