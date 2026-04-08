@@ -5,7 +5,7 @@ import type {
   PaginatedNews, SignalDirection,
   SignalHistoryEntry, BacktestingStats,
   NewsFeedItem, PerformanceData,
-  SectorHeatmapEntry,
+  SectorHeatmapEntry, ResolvedSignalEntry,
 } from './types'
 
 const rawBackend = process.env.BACKEND_URL || 'http://localhost:8000'
@@ -142,6 +142,16 @@ export async function getPerformanceOverTime(): Promise<PerformanceData> {
 export async function getSectorHeatmap(): Promise<SectorHeatmapEntry[]> {
   try {
     const res = await fetch(`${BACKEND}/analytics/sector-heatmap`, { cache: 'no-store' })
+    if (!res.ok) return []
+    return res.json()
+  } catch {
+    return []
+  }
+}
+
+export async function getResolvedSignals(): Promise<ResolvedSignalEntry[]> {
+  try {
+    const res = await fetch(`${BACKEND}/analytics/resolved-signals`, { cache: 'no-store' })
     if (!res.ok) return []
     return res.json()
   } catch {

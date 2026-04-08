@@ -9,6 +9,7 @@ const makeSignal = (overrides: Partial<SignalResponse> = {}): SignalResponse => 
   stock_name: 'Apple Inc.',
   sector: 'Technology',
   last_price: 175.0,
+  price_at_signal: null,
   direction: 'bullish',
   confidence: 0.72,
   expected_move_low: 0.03,
@@ -24,6 +25,11 @@ const makeSignal = (overrides: Partial<SignalResponse> = {}): SignalResponse => 
   risk_flags: [],
   created_at: '2026-03-29T00:00:00Z',
   expires_at: null,
+  is_expired: false,
+  deleted_at: null,
+  actual_move: null,
+  was_correct: null,
+  resolved_verdict: null,
   ...overrides,
 })
 

@@ -9,6 +9,7 @@ const bullishSignal: SignalResponse = {
   stock_name: 'NVIDIA Corporation',
   sector: 'Technology',
   last_price: 875.5,
+  price_at_signal: null,
   direction: 'bullish',
   confidence: 0.85,
   expected_move_low: 0.05,
@@ -24,6 +25,11 @@ const bullishSignal: SignalResponse = {
   risk_flags: [],
   created_at: '2026-03-27T00:00:00Z',
   expires_at: null,
+  is_expired: false,
+  deleted_at: null,
+  actual_move: null,
+  was_correct: null,
+  resolved_verdict: null,
 }
 
 const crashSignal: SignalResponse = {

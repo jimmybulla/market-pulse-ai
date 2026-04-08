@@ -4,7 +4,7 @@ import type { SignalResponse } from '@/lib/types'
 
 const signal: SignalResponse = {
   id: '1', stock_id: 'x', ticker: 'NVDA', stock_name: 'NVIDIA',
-  sector: 'Technology', last_price: 875.5,
+  sector: 'Technology', last_price: 875.5, price_at_signal: null,
   direction: 'bullish', confidence: 1.0,
   expected_move_low: 0.05, expected_move_high: 0.10,
   horizon_days: 5, opportunity_score: 1.0, crash_risk_score: 0.0,
@@ -14,6 +14,7 @@ const signal: SignalResponse = {
   historical_analog: { avg_move: 0.075, hit_rate: 0.64, sample_size: 15 },
   risk_flags: ['Overextended rally'],
   created_at: '2026-03-27T00:00:00Z', expires_at: null,
+  is_expired: false, deleted_at: null, actual_move: null, was_correct: null, resolved_verdict: null,
 }
 
 const signalNoFlags: SignalResponse = {

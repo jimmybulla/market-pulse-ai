@@ -26,6 +26,11 @@ const BASE: SignalResponse = {
   // 2 days ago → 3d left with horizon_days=5
   created_at: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
   expires_at: null,
+  is_expired: false,
+  deleted_at: null,
+  actual_move: null,
+  was_correct: null,
+  resolved_verdict: null,
 }
 
 const CRASH: SignalResponse = {

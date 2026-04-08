@@ -38,6 +38,11 @@ export interface SignalResponse {
   risk_flags: string[]
   created_at: string
   expires_at: string | null
+  is_expired: boolean
+  deleted_at: string | null
+  actual_move: number | null
+  was_correct: boolean | null
+  resolved_verdict: string | null
 }
 
 export interface PaginatedSignals {
@@ -145,4 +150,19 @@ export interface SectorHeatmapEntry {
   bullish: number
   bearish: number
   crash_risk: number
+}
+
+export interface ResolvedSignalEntry {
+  id: string
+  ticker: string
+  stock_name: string
+  direction: SignalDirection
+  confidence: number
+  expected_move_low: number
+  expected_move_high: number
+  price_at_signal: number | null
+  actual_move: number | null
+  was_correct: boolean
+  expires_at: string
+  resolved_verdict: string | null
 }
