@@ -22,42 +22,32 @@ MOCK_SIGNAL_ROW = {
     "stocks": {"ticker": "NVDA", "name": "NVIDIA Corporation", "sector": "Technology", "last_price": 875.50},
 }
 
-# An active (non-expired) signal row for tests that need is_expired=False
 MOCK_SIGNAL_ROW_ACTIVE = {
     **MOCK_SIGNAL_ROW,
     "id": "sig-uuid-2",
-    "expires_at": "2099-12-31T00:00:00+00:00",  # far future
+    "expires_at": "2099-12-31T00:00:00+00:00",
 }
 
 
-def test_signal_response_includes_lifecycle_fields(client):
-    """SignalResponse must include deleted_at, actual_move, was_correct, resolved_verdict."""
-    c, mock_db = client
-    row = dict(MOCK_SIGNAL_ROW_ACTIVE)
-    row["deleted_at"] = None
-    row["actual_move"] = 0.042
-    row["was_correct"] = True
-    row["resolved_verdict"] = "Apple hit its target."
+def _list_mock(mock_db, rows, count=None):
+    """Helper: set up list_signals mock chains (order.gte.is_.range.execute)."""
+    mock_exec = MagicMock()
+    mock_exec.data = rows
+    mock_exec.count = count if count is not None else len(rows)
+    mock_db.table.return_value.select.return_value.order.return_value.gte.return_value.is_.return_value.range.return_value.execute.return_value = mock_exec
+    mock_db.table.return_value.select.return_value.gte.return_value.is_.return_value.execute.return_value = mock_exec
+
+
+def _get_mock(mock_db, row):
+    """Helper: set up get_signal mock chain (eq.is_.maybe_single.execute)."""
     mock_exec = MagicMock()
     mock_exec.data = row
-    mock_db.table.return_value.select.return_value.eq.return_value.maybe_single.return_value.execute.return_value = mock_exec
-
-    response = c.get("/signals/sig-uuid-2")
-    assert response.status_code == 200
-    body = response.json()
-    assert body["actual_move"] == 0.042
-    assert body["was_correct"] is True
-    assert body["resolved_verdict"] == "Apple hit its target."
+    mock_db.table.return_value.select.return_value.eq.return_value.is_.return_value.maybe_single.return_value.execute.return_value = mock_exec
 
 
 def test_list_signals_returns_200(client):
     c, mock_db = client
-    mock_exec = MagicMock()
-    mock_exec.data = [dict(MOCK_SIGNAL_ROW_ACTIVE)]
-    mock_exec.count = 1
-    mock_db.table.return_value.select.return_value.order.return_value.gte.return_value.range.return_value.execute.return_value = mock_exec
-    mock_db.table.return_value.select.return_value.gte.return_value.execute.return_value = mock_exec
-
+    _list_mock(mock_db, [dict(MOCK_SIGNAL_ROW_ACTIVE)], count=1)
     response = c.get("/signals")
     assert response.status_code == 200
     body = response.json()
@@ -68,12 +58,7 @@ def test_list_signals_returns_200(client):
 
 def test_list_signals_enriches_stock_fields(client):
     c, mock_db = client
-    mock_exec = MagicMock()
-    mock_exec.data = [dict(MOCK_SIGNAL_ROW_ACTIVE)]
-    mock_exec.count = 1
-    mock_db.table.return_value.select.return_value.order.return_value.gte.return_value.range.return_value.execute.return_value = mock_exec
-    mock_db.table.return_value.select.return_value.gte.return_value.execute.return_value = mock_exec
-
+    _list_mock(mock_db, [dict(MOCK_SIGNAL_ROW_ACTIVE)], count=1)
     response = c.get("/signals")
     assert response.status_code == 200
     item = response.json()["data"][0]
@@ -84,21 +69,14 @@ def test_list_signals_enriches_stock_fields(client):
 
 def test_get_signal_returns_404_when_not_found(client):
     c, mock_db = client
-    mock_exec = MagicMock()
-    mock_exec.data = None
-    mock_db.table.return_value.select.return_value.eq.return_value.maybe_single.return_value.execute.return_value = mock_exec
-
+    _get_mock(mock_db, None)
     response = c.get("/signals/nonexistent-id")
     assert response.status_code == 404
 
 
 def test_get_signal_returns_200_when_found(client):
     c, mock_db = client
-    row = dict(MOCK_SIGNAL_ROW)
-    mock_exec = MagicMock()
-    mock_exec.data = row
-    mock_db.table.return_value.select.return_value.eq.return_value.maybe_single.return_value.execute.return_value = mock_exec
-
+    _get_mock(mock_db, dict(MOCK_SIGNAL_ROW))
     response = c.get("/signals/sig-uuid-1")
     assert response.status_code == 200
     assert response.json()["ticker"] == "NVDA"
@@ -108,25 +86,15 @@ def test_list_signals_includes_price_at_signal(client):
     c, mock_db = client
     row = dict(MOCK_SIGNAL_ROW_ACTIVE)
     row["price_at_signal"] = 875.50
-    mock_exec = MagicMock()
-    mock_exec.data = [row]
-    mock_exec.count = 1
-    mock_db.table.return_value.select.return_value.order.return_value.gte.return_value.range.return_value.execute.return_value = mock_exec
-    mock_db.table.return_value.select.return_value.gte.return_value.execute.return_value = mock_exec
-
+    _list_mock(mock_db, [row], count=1)
     response = c.get("/signals")
     assert response.status_code == 200
-    item = response.json()["data"][0]
-    assert item["price_at_signal"] == 875.50
+    assert response.json()["data"][0]["price_at_signal"] == 875.50
 
 
 def test_get_signal_sets_is_expired_true_when_past_expires_at(client):
     c, mock_db = client
-    row = dict(MOCK_SIGNAL_ROW)  # expires_at "2026-04-01" is in the past
-    mock_exec = MagicMock()
-    mock_exec.data = row
-    mock_db.table.return_value.select.return_value.eq.return_value.maybe_single.return_value.execute.return_value = mock_exec
-
+    _get_mock(mock_db, dict(MOCK_SIGNAL_ROW))
     response = c.get("/signals/sig-uuid-1")
     assert response.status_code == 200
     assert response.json()["is_expired"] is True
@@ -134,42 +102,81 @@ def test_get_signal_sets_is_expired_true_when_past_expires_at(client):
 
 def test_get_signal_sets_is_expired_false_when_future_expires_at(client):
     c, mock_db = client
-    row = dict(MOCK_SIGNAL_ROW_ACTIVE)
-    mock_exec = MagicMock()
-    mock_exec.data = row
-    mock_db.table.return_value.select.return_value.eq.return_value.maybe_single.return_value.execute.return_value = mock_exec
-
+    _get_mock(mock_db, dict(MOCK_SIGNAL_ROW_ACTIVE))
     response = c.get("/signals/sig-uuid-2")
     assert response.status_code == 200
     assert response.json()["is_expired"] is False
 
 
 def test_list_signals_excludes_expired_signals(client):
-    """list_signals must call .gte("expires_at", now) to exclude expired signals."""
     c, mock_db = client
-    mock_exec = MagicMock()
-    mock_exec.data = [dict(MOCK_SIGNAL_ROW_ACTIVE)]
-    mock_exec.count = 1
-    mock_db.table.return_value.select.return_value.order.return_value.gte.return_value.range.return_value.execute.return_value = mock_exec
-    mock_db.table.return_value.select.return_value.gte.return_value.execute.return_value = mock_exec
-
+    _list_mock(mock_db, [dict(MOCK_SIGNAL_ROW_ACTIVE)], count=1)
     response = c.get("/signals")
     assert response.status_code == 200
     assert len(response.json()["data"]) == 1
-    # Assert the expiry filter was actually applied
-    mock_db.table.return_value.select.return_value.order.return_value.gte.assert_called_once()
-    call_args = mock_db.table.return_value.select.return_value.order.return_value.gte.call_args
-    assert call_args[0][0] == "expires_at"
+    gte_call = mock_db.table.return_value.select.return_value.order.return_value.gte
+    gte_call.assert_called_once()
+    assert gte_call.call_args[0][0] == "expires_at"
 
 
 def test_list_signals_is_expired_false_for_active_signal(client):
     c, mock_db = client
-    mock_exec = MagicMock()
-    mock_exec.data = [dict(MOCK_SIGNAL_ROW_ACTIVE)]
-    mock_exec.count = 1
-    mock_db.table.return_value.select.return_value.order.return_value.gte.return_value.range.return_value.execute.return_value = mock_exec
-    mock_db.table.return_value.select.return_value.gte.return_value.execute.return_value = mock_exec
-
+    _list_mock(mock_db, [dict(MOCK_SIGNAL_ROW_ACTIVE)], count=1)
     response = c.get("/signals")
     assert response.status_code == 200
     assert response.json()["data"][0]["is_expired"] is False
+
+
+def test_signal_response_includes_lifecycle_fields(client):
+    c, mock_db = client
+    row = dict(MOCK_SIGNAL_ROW_ACTIVE)
+    row["actual_move"] = 0.042
+    row["was_correct"] = True
+    row["resolved_verdict"] = "Apple hit its target."
+    _get_mock(mock_db, row)
+    response = c.get("/signals/sig-uuid-2")
+    assert response.status_code == 200
+    body = response.json()
+    assert body["actual_move"] == 0.042
+    assert body["was_correct"] is True
+    assert body["resolved_verdict"] == "Apple hit its target."
+
+
+def test_delete_signal_returns_204(client):
+    c, mock_db = client
+    mock_exec = MagicMock()
+    mock_exec.data = {"id": "sig-uuid-1"}
+    mock_db.table.return_value.select.return_value.eq.return_value.maybe_single.return_value.execute.return_value = mock_exec
+    response = c.delete("/signals/sig-uuid-1")
+    assert response.status_code == 204
+
+
+def test_delete_signal_returns_404_when_not_found(client):
+    c, mock_db = client
+    mock_exec = MagicMock()
+    mock_exec.data = None
+    mock_db.table.return_value.select.return_value.eq.return_value.maybe_single.return_value.execute.return_value = mock_exec
+    response = c.delete("/signals/nonexistent")
+    assert response.status_code == 404
+
+
+def test_delete_signal_sets_deleted_at(client):
+    c, mock_db = client
+    mock_exec = MagicMock()
+    mock_exec.data = {"id": "sig-uuid-1"}
+    mock_db.table.return_value.select.return_value.eq.return_value.maybe_single.return_value.execute.return_value = mock_exec
+    c.delete("/signals/sig-uuid-1")
+    update_call = mock_db.table.return_value.update.call_args
+    assert "deleted_at" in update_call[0][0]
+
+
+def test_list_signals_excludes_deleted_signals(client):
+    c, mock_db = client
+    _list_mock(mock_db, [dict(MOCK_SIGNAL_ROW_ACTIVE)], count=1)
+    response = c.get("/signals")
+    assert response.status_code == 200
+    gte_chain = mock_db.table.return_value.select.return_value.order.return_value.gte.return_value
+    gte_chain.is_.assert_called()
+    call_args = gte_chain.is_.call_args
+    assert call_args[0][0] == "deleted_at"
+    assert call_args[0][1] == "null"

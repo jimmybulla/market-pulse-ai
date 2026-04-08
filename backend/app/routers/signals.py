@@ -34,11 +34,19 @@ def list_signals(
     db: Client = Depends(get_db),
 ):
     now_iso = datetime.now(timezone.utc).isoformat()
-    query = db.table("signals").select(
-        "*, stocks(ticker, name, sector, last_price)"
-    ).order("rank").gte("expires_at", now_iso)
-
-    count_query = db.table("signals").select("id", count="exact").gte("expires_at", now_iso)
+    query = (
+        db.table("signals")
+        .select("*, stocks(ticker, name, sector, last_price)")
+        .order("rank")
+        .gte("expires_at", now_iso)
+        .is_("deleted_at", "null")
+    )
+    count_query = (
+        db.table("signals")
+        .select("id", count="exact")
+        .gte("expires_at", now_iso)
+        .is_("deleted_at", "null")
+    )
 
     if direction:
         query = query.eq("direction", direction)
@@ -85,13 +93,32 @@ def get_signal_history(ticker: str, db: Client = Depends(get_db)):
     return rows
 
 
-@router.get("/{signal_id}", response_model=SignalResponse)
-def get_signal(signal_id: str, db: Client = Depends(get_db)):
-    result = db.table("signals").select(
-        "*, stocks(ticker, name, sector, last_price)"
-    ).eq("id", signal_id).maybe_single().execute()
-
+@router.delete("/{signal_id}", status_code=204)
+def delete_signal(signal_id: str, db: Client = Depends(get_db)):
+    result = (
+        db.table("signals")
+        .select("id")
+        .eq("id", signal_id)
+        .maybe_single()
+        .execute()
+    )
     if not result.data:
         raise HTTPException(status_code=404, detail="Signal not found")
+    db.table("signals").update(
+        {"deleted_at": datetime.now(timezone.utc).isoformat()}
+    ).eq("id", signal_id).execute()
 
+
+@router.get("/{signal_id}", response_model=SignalResponse)
+def get_signal(signal_id: str, db: Client = Depends(get_db)):
+    result = (
+        db.table("signals")
+        .select("*, stocks(ticker, name, sector, last_price)")
+        .eq("id", signal_id)
+        .is_("deleted_at", "null")
+        .maybe_single()
+        .execute()
+    )
+    if not result.data:
+        raise HTTPException(status_code=404, detail="Signal not found")
     return _enrich(result.data)
