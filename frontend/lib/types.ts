@@ -152,6 +152,11 @@ export interface SectorHeatmapEntry {
   crash_risk: number
 }
 
+/**
+ * A resolved (expired + evaluated) signal. Returned by /analytics/resolved-signals.
+ * Unlike SignalResponse, was_correct and expires_at are guaranteed non-null here
+ * because this endpoint only returns signals that have completed resolution.
+ */
 export interface ResolvedSignalEntry {
   id: string
   ticker: string

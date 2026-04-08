@@ -11,5 +11,7 @@ export async function deleteSignalAction(id: string): Promise<void> {
   } catch {
     // Silent fail — UI handles optimistic removal
   }
+  // Unconditional: if the delete failed, revalidation restores the signal
+  // in server state, correcting the optimistic client-side removal.
   revalidatePath('/')
 }
