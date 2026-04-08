@@ -27,6 +27,10 @@ class SignalResponse(BaseModel):
     created_at: datetime
     expires_at: Optional[datetime] = None
     is_expired: bool = False
+    deleted_at: Optional[datetime] = None
+    actual_move: Optional[float] = None
+    was_correct: Optional[bool] = None
+    resolved_verdict: Optional[str] = None
 
 
 class PaginatedSignals(BaseModel):
@@ -48,3 +52,18 @@ class SignalHistoryEntry(BaseModel):
     was_correct: Optional[bool] = None
     accuracy_notes: Optional[str] = None
     created_at: datetime
+
+
+class ResolvedSignalEntry(BaseModel):
+    id: str
+    ticker: str
+    stock_name: str
+    direction: str
+    confidence: float
+    expected_move_low: float
+    expected_move_high: float
+    price_at_signal: Optional[float] = None
+    actual_move: Optional[float] = None
+    was_correct: bool
+    expires_at: datetime
+    resolved_verdict: Optional[str] = None

@@ -30,6 +30,26 @@ MOCK_SIGNAL_ROW_ACTIVE = {
 }
 
 
+def test_signal_response_includes_lifecycle_fields(client):
+    """SignalResponse must include deleted_at, actual_move, was_correct, resolved_verdict."""
+    c, mock_db = client
+    row = dict(MOCK_SIGNAL_ROW_ACTIVE)
+    row["deleted_at"] = None
+    row["actual_move"] = 0.042
+    row["was_correct"] = True
+    row["resolved_verdict"] = "Apple hit its target."
+    mock_exec = MagicMock()
+    mock_exec.data = row
+    mock_db.table.return_value.select.return_value.eq.return_value.maybe_single.return_value.execute.return_value = mock_exec
+
+    response = c.get("/signals/sig-uuid-2")
+    assert response.status_code == 200
+    body = response.json()
+    assert body["actual_move"] == 0.042
+    assert body["was_correct"] is True
+    assert body["resolved_verdict"] == "Apple hit its target."
+
+
 def test_list_signals_returns_200(client):
     c, mock_db = client
     mock_exec = MagicMock()
