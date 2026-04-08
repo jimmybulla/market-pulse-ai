@@ -9,6 +9,7 @@ from pydantic import BaseModel
 from supabase import Client
 
 from app.database import get_db
+from app.models.signal import ResolvedSignalEntry
 
 router = APIRouter()
 
@@ -202,3 +203,33 @@ def get_sector_heatmap(db: Client = Depends(get_db)):
             counts[sector][direction] += 1
 
     return sorted(counts.values(), key=lambda x: x["signal_count"], reverse=True)
+
+
+# ── /resolved-signals ─────────────────────────────────────────────────
+
+@router.get("/resolved-signals", response_model=list[ResolvedSignalEntry])
+def get_resolved_signals(db: Client = Depends(get_db)):
+    from datetime import timezone
+    now_iso = datetime.now(timezone.utc).isoformat()
+    rows = (
+        db.table("signals")
+        .select(
+            "id, direction, confidence, expected_move_low, expected_move_high, "
+            "price_at_signal, actual_move, was_correct, expires_at, resolved_verdict, "
+            "stocks(ticker, name)"
+        )
+        .lt("expires_at", now_iso)
+        .not_.is_("was_correct", "null")
+        .is_("deleted_at", "null")
+        .order("expires_at", desc=True)
+        .limit(50)
+        .execute()
+        .data or []
+    )
+    result = []
+    for row in rows:
+        stock = row.pop("stocks", None) or {}
+        row["ticker"] = stock.get("ticker", "")
+        row["stock_name"] = stock.get("name", "")
+        result.append(row)
+    return result

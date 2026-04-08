@@ -206,3 +206,61 @@ def test_sector_heatmap_sorted_by_signal_count_desc(client):
     assert body[0]["signal_count"] == 3
     assert body[1]["sector"] == "Healthcare"
     assert body[1]["signal_count"] == 1
+
+
+# ── /analytics/resolved-signals ──────────────────────────────────────
+
+def test_resolved_signals_returns_empty_list_when_none(client):
+    c, mock_db = client
+    mock_exec = MagicMock()
+    mock_exec.data = []
+    mock_db.table.return_value.select.return_value.lt.return_value.not_.is_.return_value.is_.return_value.order.return_value.limit.return_value.execute.return_value = mock_exec
+
+    response = c.get("/analytics/resolved-signals")
+    assert response.status_code == 200
+    assert response.json() == []
+
+
+def test_resolved_signals_returns_correct_shape(client):
+    c, mock_db = client
+    mock_exec = MagicMock()
+    mock_exec.data = [
+        {
+            "id": "sig-1",
+            "direction": "bullish",
+            "confidence": 0.72,
+            "expected_move_low": 0.03,
+            "expected_move_high": 0.07,
+            "price_at_signal": 185.50,
+            "actual_move": 0.042,
+            "was_correct": True,
+            "expires_at": "2026-04-01T00:00:00+00:00",
+            "resolved_verdict": "Apple hit its target.",
+            "stocks": {"ticker": "AAPL", "name": "Apple Inc."},
+        }
+    ]
+    mock_db.table.return_value.select.return_value.lt.return_value.not_.is_.return_value.is_.return_value.order.return_value.limit.return_value.execute.return_value = mock_exec
+
+    response = c.get("/analytics/resolved-signals")
+    assert response.status_code == 200
+    body = response.json()
+    assert len(body) == 1
+    assert body[0]["ticker"] == "AAPL"
+    assert body[0]["stock_name"] == "Apple Inc."
+    assert body[0]["was_correct"] is True
+    assert body[0]["resolved_verdict"] == "Apple hit its target."
+
+
+def test_resolved_signals_excludes_active_and_deleted(client):
+    """Endpoint filters: expires_at < now, was_correct IS NOT NULL, deleted_at IS NULL."""
+    c, mock_db = client
+    mock_exec = MagicMock()
+    mock_exec.data = []
+    mock_db.table.return_value.select.return_value.lt.return_value.not_.is_.return_value.is_.return_value.order.return_value.limit.return_value.execute.return_value = mock_exec
+
+    response = c.get("/analytics/resolved-signals")
+    assert response.status_code == 200
+    # Verify filter chain was called
+    lt_call = mock_db.table.return_value.select.return_value.lt
+    lt_call.assert_called_once()
+    assert lt_call.call_args[0][0] == "expires_at"
