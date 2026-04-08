@@ -1,17 +1,19 @@
 // frontend/app/page.tsx
-import { getSignals, getNewsFeed, getSectorHeatmap } from '@/lib/api'
+import { getSignals, getNewsFeed, getSectorHeatmap, getResolvedSignals } from '@/lib/api'
 import SignalTrackerRow from '@/components/signals/SignalTrackerRow'
 import NewsFeed from '@/components/news/NewsFeed'
 import SectorHeatmap from '@/components/analytics/SectorHeatmap'
+import PastSignals from '@/components/signals/PastSignals'
 import TopBar from '@/components/layout/TopBar'
-import { TrendingUp, AlertTriangle, Clock, BarChart2 } from 'lucide-react'
+import { TrendingUp, AlertTriangle, Clock, BarChart2, CheckCircle } from 'lucide-react'
 
 export default async function DashboardPage() {
-  const [bullish, crashRisk, newsFeed, heatmap] = await Promise.all([
+  const [bullish, crashRisk, newsFeed, heatmap, resolved] = await Promise.all([
     getSignals({ direction: 'bullish', limit: 10 }),
     getSignals({ direction: 'crash_risk', limit: 10 }),
     getNewsFeed(),
     getSectorHeatmap(),
+    getResolvedSignals(),
   ])
 
   return (
@@ -37,7 +39,6 @@ export default async function DashboardPage() {
             </div>
           ) : (
             <div className="bg-surface-card rounded-xl border border-white/8 overflow-hidden">
-              {/* Column header */}
               <div className="grid grid-cols-[2rem_1fr_auto_2fr_auto_auto] lg:grid-cols-[2.5rem_1.5fr_auto_2fr_auto_auto] gap-3 lg:gap-4 px-4 py-2 border-b border-white/8">
                 <span className="text-xs text-gray-600">#</span>
                 <span className="text-xs text-gray-600">Stock</span>
@@ -103,6 +104,16 @@ export default async function DashboardPage() {
           <div className="bg-surface-card rounded-xl border border-white/8">
             <NewsFeed items={newsFeed} />
           </div>
+        </section>
+
+        {/* Past Signals */}
+        <section>
+          <div className="flex items-center gap-2 mb-3">
+            <CheckCircle className="w-4 h-4 text-gray-500" />
+            <h2 className="text-sm font-semibold text-gray-300">Past Signals</h2>
+            <span className="text-xs text-gray-600">({resolved.length})</span>
+          </div>
+          <PastSignals initialData={resolved} />
         </section>
 
       </div>

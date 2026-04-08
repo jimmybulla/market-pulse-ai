@@ -1,8 +1,10 @@
 'use client'
 
 import Link from 'next/link'
+import { Trash2 } from 'lucide-react'
 import { directionLabel, calcActualPct, calcProgressPct, calcDaysRemaining } from '@/lib/signal-formatting'
 import { Badge } from '@/components/ui/badge'
+import { deleteSignalAction } from '@/app/actions'
 import type { SignalResponse, SignalDirection } from '@/lib/types'
 
 function directionBadgeClass(direction: SignalDirection): string {
@@ -49,65 +51,82 @@ export default function SignalTrackerRow({ signal }: Props) {
   const daysLeft = calcDaysRemaining(created_at, horizon_days)
   const expired = daysLeft <= 0
 
+  async function handleDelete(e: React.MouseEvent) {
+    e.preventDefault()
+    e.stopPropagation()
+    await deleteSignalAction(signal.id)
+  }
+
   return (
-    <Link href={`/stock/${ticker}`} className="block group">
-      <div className="grid grid-cols-[2rem_1fr_auto_2fr_auto_auto] lg:grid-cols-[2.5rem_1.5fr_auto_2fr_auto_auto] items-center gap-3 lg:gap-4 px-4 py-3 rounded-lg hover:bg-surface-elevated transition-colors">
+    <div className="group relative">
+      <Link href={`/stock/${ticker}`} className="block">
+        <div className="grid grid-cols-[2rem_1fr_auto_2fr_auto_auto] lg:grid-cols-[2.5rem_1.5fr_auto_2fr_auto_auto] items-center gap-3 lg:gap-4 px-4 py-3 rounded-lg hover:bg-surface-elevated transition-colors">
 
-        {/* Rank */}
-        <span className="text-xs text-gray-600 font-mono text-right">#{rank}</span>
+          {/* Rank */}
+          <span className="text-xs text-gray-600 font-mono text-right">#{rank}</span>
 
-        {/* Ticker + name */}
-        <div className="min-w-0">
-          <p className="font-mono font-bold text-sm text-white leading-tight">{ticker}</p>
-          <p className="text-xs text-gray-500 truncate">{stock_name}</p>
-        </div>
+          {/* Ticker + name */}
+          <div className="min-w-0">
+            <p className="font-mono font-bold text-sm text-white leading-tight">{ticker}</p>
+            <p className="text-xs text-gray-500 truncate">{stock_name}</p>
+          </div>
 
-        {/* Direction badge */}
-        <Badge className={`text-xs shrink-0 ${directionBadgeClass(direction)}`}>
-          {directionLabel(direction)}
-        </Badge>
+          {/* Direction badge */}
+          <Badge className={`text-xs shrink-0 ${directionBadgeClass(direction)}`}>
+            {directionLabel(direction)}
+          </Badge>
 
-        {/* Progress bar + labels */}
-        <div className="flex flex-col gap-1 min-w-0">
-          <div
-            className="w-full bg-surface-elevated rounded-full h-1.5"
-            data-testid="signal-progress-track"
-          >
+          {/* Progress bar + labels */}
+          <div className="flex flex-col gap-1 min-w-0">
             <div
-              className={`h-1.5 rounded-full transition-all ${progress.barClass}`}
-              style={{ width: `${progress.pct}%` }}
-            />
+              className="w-full bg-surface-elevated rounded-full h-1.5"
+              data-testid="signal-progress-track"
+            >
+              <div
+                className={`h-1.5 rounded-full transition-all ${progress.barClass}`}
+                style={{ width: `${progress.pct}%` }}
+              />
+            </div>
+            <div className="flex items-center gap-1.5 text-xs font-mono text-gray-400">
+              {progress.actualPct !== null ? (
+                <>
+                  <span className={progress.actualPct >= 0 ? 'text-profit' : 'text-loss'}>
+                    {progress.actualPct >= 0 ? '+' : ''}{progress.actualPct.toFixed(1)}%
+                  </span>
+                  {direction !== 'crash_risk' && (
+                    <>
+                      <span className="text-gray-700">→</span>
+                      <span className="text-gray-500">
+                        +{(expected_move_low * 100).toFixed(1)}–{(expected_move_high * 100).toFixed(1)}%
+                      </span>
+                    </>
+                  )}
+                </>
+              ) : (
+                <span className="text-gray-700">—</span>
+              )}
+            </div>
           </div>
-          <div className="flex items-center gap-1.5 text-xs font-mono text-gray-400">
-            {progress.actualPct !== null ? (
-              <>
-                <span className={progress.actualPct >= 0 ? 'text-profit' : 'text-loss'}>
-                  {progress.actualPct >= 0 ? '+' : ''}{progress.actualPct.toFixed(1)}%
-                </span>
-                {direction !== 'crash_risk' && (
-                  <>
-                    <span className="text-gray-700">→</span>
-                    <span className="text-gray-500">
-                      +{(expected_move_low * 100).toFixed(1)}–{(expected_move_high * 100).toFixed(1)}%
-                    </span>
-                  </>
-                )}
-              </>
-            ) : (
-              <span className="text-gray-700">—</span>
-            )}
+
+          {/* Confidence */}
+          <span className="text-xs font-mono text-gray-300 text-right">{Math.round(confidence * 100)}%</span>
+
+          {/* Time remaining + delete */}
+          <div className="flex items-center gap-2 justify-end">
+            <span className={`text-xs shrink-0 ${expired ? 'text-gray-600' : 'text-gray-400'}`}>
+              {expired ? 'Expired' : `${daysLeft}d left`}
+            </span>
+            <button
+              onClick={handleDelete}
+              className="opacity-0 group-hover:opacity-100 text-gray-600 hover:text-loss transition-all"
+              title="Delete signal"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+            </button>
           </div>
+
         </div>
-
-        {/* Confidence */}
-        <span className="text-xs font-mono text-gray-300 text-right">{Math.round(confidence * 100)}%</span>
-
-        {/* Time remaining */}
-        <span className={`text-xs text-right shrink-0 ${expired ? 'text-gray-600' : 'text-gray-400'}`}>
-          {expired ? 'Expired' : `${daysLeft}d left`}
-        </span>
-
-      </div>
-    </Link>
+      </Link>
+    </div>
   )
 }
