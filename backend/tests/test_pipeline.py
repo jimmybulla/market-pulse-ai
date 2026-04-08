@@ -184,6 +184,56 @@ def test_sync_resolved_signals_skips_when_no_history():
     db.table.return_value.update.assert_not_called()
 
 
+def test_generate_verdicts_calls_claude_for_resolved_signals():
+    from app.services.pipeline import generate_verdicts
+    db = MagicMock()
+    db.table.return_value.select.return_value.not_.is_.return_value.is_.return_value.is_.return_value.execute.return_value.data = [
+        {
+            "id": "sig-1",
+            "ticker": "AAPL",
+            "direction": "bullish",
+            "confidence": 0.72,
+            "expected_move_low": 0.03,
+            "expected_move_high": 0.07,
+            "actual_move": 0.042,
+            "was_correct": True,
+            "drivers": ["Strong earnings"],
+            "accuracy_notes": "moved +4.2%",
+        }
+    ]
+
+    with patch("app.services.pipeline.generate_verdict", return_value="Apple hit its target.") as mock_verdict:
+        generate_verdicts(db)
+
+    mock_verdict.assert_called_once()
+    update_call = db.table.return_value.update.call_args
+    assert update_call[0][0]["resolved_verdict"] == "Apple hit its target."
+
+
+def test_generate_verdicts_skips_when_verdict_returns_none():
+    from app.services.pipeline import generate_verdicts
+    db = MagicMock()
+    db.table.return_value.select.return_value.not_.is_.return_value.is_.return_value.is_.return_value.execute.return_value.data = [
+        {
+            "id": "sig-1",
+            "ticker": "AAPL",
+            "direction": "bullish",
+            "confidence": 0.72,
+            "expected_move_low": 0.03,
+            "expected_move_high": 0.07,
+            "actual_move": 0.042,
+            "was_correct": True,
+            "drivers": [],
+            "accuracy_notes": None,
+        }
+    ]
+
+    with patch("app.services.pipeline.generate_verdict", return_value=None):
+        generate_verdicts(db)
+
+    db.table.return_value.update.assert_not_called()
+
+
 # --- update_prices ---
 
 def test_update_prices_sets_last_price():

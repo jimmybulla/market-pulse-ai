@@ -8,7 +8,7 @@ from typing import Optional
 import yfinance as yf
 from supabase import Client
 
-from app.services.explainer import generate_explanation
+from app.services.explainer import generate_explanation, generate_verdict
 from app.services.features import extract_features
 from app.services.ingestor import ingest_news
 from app.services.momentum import get_momentum
@@ -347,6 +347,29 @@ def sync_resolved_signals(db: Client) -> None:
     logger.info("[pipeline] Synced %d resolved signal outcomes to signals table", synced)
 
 
+def generate_verdicts(db: Client) -> None:
+    """For each newly resolved signal without a verdict, call Claude to generate one."""
+    rows = (
+        db.table("signals")
+        .select(
+            "id, ticker, direction, confidence, expected_move_low, expected_move_high, "
+            "actual_move, was_correct, drivers, accuracy_notes"
+        )
+        .not_.is_("was_correct", "null")
+        .is_("resolved_verdict", "null")
+        .is_("deleted_at", "null")
+        .execute()
+        .data or []
+    )
+    generated = 0
+    for row in rows:
+        verdict = generate_verdict(row)
+        if verdict:
+            db.table("signals").update({"resolved_verdict": verdict}).eq("id", row["id"]).execute()
+            generated += 1
+    logger.info("[pipeline] Generated %d signal verdicts", generated)
+
+
 def resolve_signal_outcomes(db: Client) -> None:
     """Resolve actual outcomes for signal_history rows whose horizon has passed."""
     now = datetime.now(timezone.utc)
@@ -526,6 +549,12 @@ def run_pipeline(db: Client) -> None:
         sync_resolved_signals(db)
     except Exception as exc:
         logger.error("[pipeline] sync_resolved_signals failed: %s", exc)
+
+    # Step 5c: Generate Claude verdicts for newly resolved signals
+    try:
+        generate_verdicts(db)
+    except Exception as exc:
+        logger.error("[pipeline] generate_verdicts failed: %s", exc)
 
     # Step 6: Push alerts for newly created high-confidence signals
     try:
