@@ -20,7 +20,7 @@ _DAYS: dict[str, int] = {"7d": 7, "30d": 30, "90d": 90}
 
 # Simple TTL cache: key → (timestamp, data)
 _PRICE_CACHE: dict[str, tuple[float, list]] = {}
-_PRICE_CACHE_TTL = 3600  # 1 hour
+_PRICE_CACHE_TTL = 28800  # 8 hours (3x daily)
 
 
 @router.get("/{ticker}/price-history")
@@ -33,14 +33,18 @@ def get_price_history(
     days = _DAYS[period]
 
     # Try Supabase-cached history first (populated by pipeline, avoids yfinance rate limits)
-    stock_row = (
-        db.table("stocks")
-        .select("price_history_90d")
-        .eq("ticker", upper)
-        .maybe_single()
-        .execute()
-        .data
-    )
+    try:
+        stock_row = (
+            db.table("stocks")
+            .select("price_history_90d")
+            .eq("ticker", upper)
+            .maybe_single()
+            .execute()
+            .data
+        )
+    except Exception as exc:
+        logger.warning("[charts] Supabase price_history_90d lookup failed for %s: %s", upper, exc)
+        stock_row = None
     if stock_row and stock_row.get("price_history_90d"):
         all_data = stock_row["price_history_90d"]
         # Note: if pipeline has fewer entries than requested days, returns all available data

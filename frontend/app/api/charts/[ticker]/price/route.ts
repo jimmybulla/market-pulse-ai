@@ -8,11 +8,11 @@ export async function GET(
   const { searchParams } = new URL(request.url)
   const res = await proxyGet(
     `/stocks/${ticker.toUpperCase()}/price-history?${searchParams}`,
-    { next: { revalidate: 3600 } }
+    { next: { revalidate: 28800 } }
   )
   const data = await res.json()
   return Response.json(data, {
     status: res.status,
-    headers: { 'Cache-Control': 'public, max-age=3600, s-maxage=3600' },
+    headers: { 'Cache-Control': 'public, max-age=28800, s-maxage=28800' },
   })
 }
