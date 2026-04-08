@@ -11,7 +11,7 @@ def configure_scheduler(run_pipeline_fn) -> None:
     scheduler.add_job(
         run_pipeline_fn,
         "interval",
-        minutes=30,
+        minutes=60,
         next_run_time=datetime.now(timezone.utc),  # run immediately on startup
         id="market_pipeline",
         max_instances=1,               # prevent overlapping runs

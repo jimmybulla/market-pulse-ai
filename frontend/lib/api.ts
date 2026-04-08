@@ -117,7 +117,7 @@ export async function getBacktestingStats(): Promise<BacktestingStats> {
 
 export async function getNewsFeed(): Promise<NewsFeedItem[]> {
   try {
-    const res = await fetch(`${BACKEND}/news/feed`, { cache: 'no-store' })
+    const res = await fetch(`${BACKEND}/news/feed`, { next: { revalidate: 3600 } })
     if (!res.ok) return []
     return res.json()
   } catch {
