@@ -9,6 +9,7 @@ import type { ResolvedSignalEntry, SignalDirection } from '@/lib/types'
 
 function directionBadgeClass(direction: SignalDirection): string {
   if (direction === 'bullish') return 'bg-profit/10 text-profit border-profit/20'
+  if (direction === 'crash_risk') return 'bg-loss/10 text-loss border-loss/20'
   return 'bg-loss/10 text-loss border-loss/20'
 }
 
@@ -34,8 +35,12 @@ export default function ResolvedSignalRow({ entry, onDelete }: Props) {
   async function handleDelete(e: React.MouseEvent) {
     e.stopPropagation()
     setDeleting(true)
-    onDelete(entry.id)
-    await deleteSignalAction(entry.id)
+    try {
+      await deleteSignalAction(entry.id)
+      onDelete(entry.id)
+    } finally {
+      setDeleting(false)
+    }
   }
 
   return (
@@ -70,7 +75,13 @@ export default function ResolvedSignalRow({ entry, onDelete }: Props) {
           ) : (
             <span className="text-gray-600">—</span>
           )}
-          <span className={`font-semibold ml-1 ${entry.actual_move != null && entry.actual_move >= 0 ? 'text-profit' : 'text-loss'}`}>
+          <span className={`font-semibold ml-1 ${
+            entry.actual_move == null
+              ? 'text-gray-600'
+              : entry.actual_move >= 0
+                ? 'text-profit'
+                : 'text-loss'
+          }`}>
             {movePct}
           </span>
         </div>
