@@ -18,7 +18,7 @@ export default function ChartsSection({ ticker }: Props) {
   return (
     <div className="space-y-4">
       <RangeSelector value={range} onChange={setRange} />
-      <PriceChart ticker={ticker} range={range} />
+      <PriceChart key={`${ticker}-${range}`} ticker={ticker} range={range} />
       <SentimentChart ticker={ticker} range={range} />
       <NewsVolumeChart ticker={ticker} range={range} />
     </div>
